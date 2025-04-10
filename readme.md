@@ -6,6 +6,12 @@ Built with ❤️ using **Flask**, **Bootstrap 5**, **Quill**, and **Marked.js**
 
 ---
 
+<p align="center">
+  <img src="https://i.ibb.co/F4jgNrrN/image-2025-04-10-220900870.png" alt="Live Screenshot of App" style="border-radius: 10px; max-width: 100%;">
+</p>
+
+---
+
 ## ✨ Features
 
 - ⚙️ **Dual Email Content Options**  
@@ -79,7 +85,7 @@ Built with ❤️ using **Flask**, **Bootstrap 5**, **Quill**, and **Marked.js**
    ```dotenv
    display_name=Mr.Bean
    sender_email=your@example.com
-   password=your_app_password
+   password=your_password
    MAILER_HOST=smtp.mailersend.net
    MAILER_PORT=587
    ```
@@ -140,9 +146,9 @@ Visit in browser:
 ## 🙌 Contributions Welcome!
 
 Got ideas? Want to fix bugs or add features?  
-**Feel free to fork this repo, make your changes, and submit a pull request.**
+**Fork this repo, hack away, and send a pull request.** I’ll review & merge with a happy face 😄
 
-We love contributors! 💙
+Let’s make email boring again (just kidding). Or maybe not.
 
 ---
 
