@@ -1,4 +1,5 @@
 import os
+import re
 import csv
 import io
 import smtplib
@@ -38,6 +39,33 @@ def generate_message(template, row, headers):
         value = row.get(header, "")
         message = message.replace(f"${header}", value)
     return message
+
+def extract_subject_and_body(content):
+    """
+    Extract email subject from content.
+    If content contains a <title> tag, use its text as subject and remove it.
+    Otherwise, take the first non-empty line as subject (for Markdown) and remove it from the body.
+    """
+    # Attempt HTML extraction
+    pattern = r"<title>(.*?)</title>"
+    match = re.search(pattern, content, re.IGNORECASE | re.DOTALL)
+    if match:
+        subj = match.group(1).strip()
+        # Remove the <title> tag from content
+        content = re.sub(pattern, "", content, flags=re.IGNORECASE | re.DOTALL)
+        return subj, content
+
+    # Fallback to Markdown: use first non-empty line as subject
+    lines = content.splitlines()
+    for i, line in enumerate(lines):
+        if line.strip():
+            subj = line.strip()
+            # Remove the subject line from the content
+            new_lines = lines[:i] + lines[i+1:]
+            content = "\n".join(new_lines)
+            return subj, content
+
+    return "No Subject", content
 
 def send_email(receiver, subject, text_message, html_message, attachments):
     """Create and send an email with text, HTML parts, and optional attachments."""
@@ -82,7 +110,7 @@ def send_email(receiver, subject, text_message, html_message, attachments):
 @app.route("/", methods=["GET", "POST"])
 def index():
     if request.method == "POST":
-        # Determine which email content source the user selected (upload or draft)
+        # Choose email content source: upload template vs draft in app.
         template_source = request.form.get("template_source")
         if template_source == "upload":
             template_file = request.files.get("template_file")
@@ -100,10 +128,13 @@ def index():
                 flash("Please draft your email before sending.", "error")
                 return redirect(request.url)
         
+        # Retrieve user-input subject (if any)
+        user_subject = request.form.get("subject", "").strip()
+        
         # Get attachments (if any)
         attachments = request.files.getlist("attachments")
 
-        # Determine sending method: bulk (CSV) or manual.
+        # Determine sending method: bulk vs manual.
         send_method = request.form.get("send_method")
         log_messages = []
         sent_count = 0
@@ -125,12 +156,18 @@ def index():
                     log_messages.append("Missing EMAIL for one row, skipping.")
                     continue
                 msg_full = generate_message(email_content, row, headers)
-                subject_line = msg_full.splitlines()[0].strip() or "No Subject"
+                if user_subject:
+                    subject_line = user_subject
+                    body_to_send = msg_full
+                else:
+                    subject_line, body_to_send = extract_subject_and_body(msg_full)
+
                 try:
-                    html_version = msg_full if "<html" in msg_full.lower() else markdown.markdown(msg_full)
+                    html_version = body_to_send if "<html" in body_to_send.lower() else markdown.markdown(body_to_send)
                 except Exception as e:
-                    html_version = msg_full
-                if send_email(receiver, subject_line, msg_full, html_version, attachments):
+                    html_version = body_to_send
+
+                if send_email(receiver, subject_line, body_to_send, html_version, attachments):
                     sent_count += 1
                     log_messages.append(f"Email sent to {receiver}")
                 else:
@@ -138,20 +175,24 @@ def index():
                     log_messages.append(f"Failed to send email to {receiver}")
             flash(f"Emails sent: {sent_count}. Failed: {failed_count}", "info")
         else:
-            # Manual sending: send to a single email address.
+            # Manual sending method: single recipient.
             manual_email = request.form.get("manual_email")
             if not manual_email:
                 flash("Please provide an email address for manual sending.", "error")
                 return redirect(request.url)
-            dummy_data = {"EMAIL": manual_email}
-            headers = ["EMAIL"]
-            msg_full = generate_message(email_content, dummy_data, headers)
-            subject_line = msg_full.splitlines()[0].strip() or "No Subject"
+            # For manual sending, we use the same content for all.
+            if user_subject:
+                subject_line = user_subject
+                body_to_send = email_content
+            else:
+                subject_line, body_to_send = extract_subject_and_body(email_content)
+
             try:
-                html_version = msg_full if "<html" in msg_full.lower() else markdown.markdown(msg_full)
+                html_version = body_to_send if "<html" in body_to_send.lower() else markdown.markdown(body_to_send)
             except Exception as e:
-                html_version = msg_full
-            if send_email(manual_email, subject_line, msg_full, html_version, attachments):
+                html_version = body_to_send
+
+            if send_email(manual_email, subject_line, body_to_send, html_version, attachments):
                 flash(f"Email sent successfully to {manual_email}.", "info")
                 log_messages.append(f"Email sent to {manual_email}")
             else:
@@ -161,7 +202,6 @@ def index():
         return render_template("result.html", log_messages=log_messages)
 
     return render_template("index.html")
-
 
 if __name__ == "__main__":
     app.run(debug=True)
