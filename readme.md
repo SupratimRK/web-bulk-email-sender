@@ -7,7 +7,7 @@ Built with ❤️ using **Flask**, **Bootstrap 5**, **Quill**, and **Marked.js**
 ---
 
 <p align="center">
-  <img src="https://i.ibb.co/F4jgNrrN/image-2025-04-10-220900870.png" alt="Live Screenshot of App" style="border-radius: 10px; max-width: 100%;">
+  <img src="https://raw.githubusercontent.com/SupratimRK/web-bulk-email-sender/refs/heads/main/screenshot.png" alt="Live Screenshot of App" style="border-radius: 10px; max-width: 100%;">
 </p>
 
 ---
