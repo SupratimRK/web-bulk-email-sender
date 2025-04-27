@@ -1,437 +1,776 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Bulk Email Sender</title>
-  <!-- Bootstrap CSS -->
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Tailwind CSS via CDN -->
+  <script src="https://cdn.tailwindcss.com?plugins=forms,typography"></script>
   <!-- Quill Editor CSS -->
   <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
-   <!-- Bootstrap Icons -->
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
   <style>
-      body {
-          background-color: #f8f9fa;
-          padding-top: 70px; /* Adjust padding for fixed navbar height */
+    /* Custom Quill Styles */
+    .ql-editor {
+      min-height: 280px;
+      font-size: 1rem;
+      line-height: 1.6;
+      background-color: #fff;
+      border-bottom-left-radius: 0.375rem;
+      border-bottom-right-radius: 0.375rem;
+      border: 1px solid #d1d5db;
+      border-top: 0;
+    }
+
+    .ql-toolbar.ql-snow {
+      border-top-left-radius: 0.375rem;
+      border-top-right-radius: 0.375rem;
+      border: 1px solid #d1d5db;
+      border-bottom: 0;
+      background-color: #f9fafb;
+      padding: 8px;
+    }
+
+    .ql-toolbar.ql-snow .ql-formats {
+      margin-right: 10px !important;
+    }
+
+    /* Sticky Preview */
+    @media (min-width: 1024px) {
+
+      /* lg breakpoint */
+      .sticky-preview {
+        position: sticky;
+        top: 88px;
+        max-height: calc(100vh - 100px);
+        overflow-y: auto;
       }
-      .container {
-          margin-top: 20px;
-          margin-bottom: 40px; /* Reduced bottom margin */
-      }
-      .card { margin-bottom: 25px; } /* Slightly increased card spacing */
-      .editor-container { height: 300px; background-color: #fff; }
-      #preview-container {
-          display: none;
-          border: 1px solid #dee2e6;
-          padding: 15px;
-          background-color: #fff;
-          max-height: 450px; /* Increased preview height */
-          overflow-y: auto;
-      }
-      /* Loading indicator styles */
-      #loading-indicator {
-        display: none;
-        position: fixed;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        z-index: 1050;
-        background-color: rgba(255, 255, 255, 0.8);
-        padding: 20px;
-        border-radius: 5px;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        align-items: center; /* For flex display */
-      }
-      .nav-tabs .nav-link { color: #495057; }
-      .nav-tabs .nav-link.active { color: #0d6efd; border-color: #dee2e6 #dee2e6 #fff; }
-      /* Custom Navbar Style */
-      .navbar {
-          border-bottom: 1px solid #e9ecef; /* Subtle separator line */
-      }
-       .card-header {
-             background-color: #f8f9fa; /* Lighter header */
-             border-bottom: 1px solid #dee2e6;
-        }
-      /* Style for Navbar Status */
-      #navbar-status {
-          font-size: 0.9em;
-          display: flex;
-          align-items: center;
-      }
+    }
+
+    /* File Input Button */
+    input[type="file"] {
+      /* No color: transparent needed now */
+    }
+
+    input[type="file"]::file-selector-button {
+      margin-right: 1rem;
+      padding: 0.5rem 1rem;
+      border-radius: 0.375rem;
+      border: none;
+      font-size: 0.875rem;
+      font-weight: 600;
+      background-color: #eef2ff;
+      color: #4338ca;
+      transition: background-color 0.15s ease-in-out;
+      cursor: pointer;
+    }
+
+    input[type="file"]::file-selector-button:hover {
+      background-color: #e0e7ff;
+    }
+
+    /* Loading Indicator */
+    #loading-indicator {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 50;
+      background-color: rgba(243, 244, 246, 0.75);
+      align-items: center;
+      justify-content: center;
+    }
+
+    #loading-indicator.is-active {
+      display: flex;
+    }
+
+    /* Custom Radio Buttons */
+    input[type="radio"]+label {
+      cursor: pointer;
+      padding: 0.5rem 1rem;
+      border: 1px solid #d1d5db;
+      border-radius: 0.375rem;
+      transition: all 0.2s ease-in-out;
+      display: inline-block;
+      white-space: nowrap;
+    }
+
+    input[type="radio"]:checked+label {
+      background-color: #eef2ff;
+      border-color: #6366f1;
+      color: #4338ca;
+      box-shadow: 0 0 0 1px #6366f1;
+    }
+
+    input[type="radio"] {
+      appearance: none;
+      position: absolute;
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .radio-group-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      align-items: center;
+    }
+
+    /* Editor & Preview Tab Styling */
+    .editor-tab,
+    .preview-tab {
+      padding: 0.5rem 1rem;
+      font-weight: 500;
+      font-size: 0.875rem;
+      color: #6b7280;
+      border-bottom: 2px solid transparent;
+      transition: all 0.2s ease;
+      cursor: pointer;
+    }
+
+    .editor-tab:hover,
+    .preview-tab:hover {
+      color: #374151;
+      border-bottom-color: #d1d5db;
+    }
+
+    .editor-tab.active,
+    .preview-tab.active {
+      color: #4f46e5;
+      border-bottom-color: #4f46e5;
+    }
+
+    /* Form Focus Ring */
+    input[type="text"]:focus,
+    input[type="email"]:focus,
+    textarea:focus {
+      outline: 2px solid transparent;
+      outline-offset: 2px;
+      --tw-ring-inset: var(--tw-empty,
+          /*!*/
+          /*!*/
+        );
+      --tw-ring-offset-width: 0px;
+      --tw-ring-offset-color: #fff;
+      --tw-ring-color: #a5b4fc;
+      --tw-ring-offset-shadow: var(--tw-ring-inset) 0 0 0 var(--tw-ring-offset-width) var(--tw-ring-offset-color);
+      --tw-ring-shadow: var(--tw-ring-inset) 0 0 0 calc(2px + var(--tw-ring-offset-width)) var(--tw-ring-color);
+      box-shadow: var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow, 0 0 #0000);
+      border-color: #818cf8;
+    }
+
+    /* Mobile Preview Panel Styling */
+    #mobilePreviewPanel {
+      max-width: 375px;
+      /* Common mobile width */
+      margin-left: auto;
+      margin-right: auto;
+      border: 1px solid #e5e7eb;
+      /* border-gray-200 */
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      border-radius: 0.5rem;
+      /* rounded-lg */
+      overflow: hidden;
+      /* Ensure content stays within border */
+      background-color: #fff;
+      /* Give it a background */
+      padding: 1rem;
+      /* Add some padding inside */
+    }
+
+    /* Ensure prose styles don't overflow mobile */
+    #mobile-preview-content.prose {
+      overflow-wrap: break-word;
+      word-wrap: break-word;
+    }
   </style>
 </head>
-<body>
 
-<!-- Modern Navbar -->
-<nav class="navbar navbar-expand-lg navbar-light bg-white fixed-top shadow-sm">
-  <div class="container-fluid">
-    <a class="navbar-brand fw-bold text-primary" href="{{ url_for('index') }}">
-        <i class="bi bi-envelope-arrow-up-fill me-2"></i>Bulk Mailer WebUI
-    </a>
-    <!-- *** ADDED Navbar Status Area *** -->
-    <span class="navbar-text ms-auto" id="navbar-status">
-        <!-- Status will be updated by JS -->
-        <i class="bi bi-info-circle me-1"></i>Ready
-    </span>
-    <!-- *** END Navbar Status Area *** -->
-  </div>
-</nav>
+<body class="bg-gray-100 font-sans antialiased">
 
-<!-- Loading Indicator -->
-<div id="loading-indicator">
-  <div class="spinner-border text-primary" role="status">
-    <span class="visually-hidden">Sending...</span>
-  </div>
-  <span class="ms-2">Processing... Please wait.</span>
-</div>
-
-
-<div class="container">
-  <h2 class="text-center my-4">Compose and Send Emails</h2>
-
-  <!-- Flash Messages -->
-  {% with messages = get_flashed_messages(with_categories=true) %}
-    {% if messages %}
-      {% for category, message in messages %}
-        {% set alert_class = 'alert-info' %}
-        {% if category == 'error' or category == 'danger' %}
-          {% set alert_class = 'alert-danger' %}
-        {% elif category == 'success' %}
-          {% set alert_class = 'alert-success' %}
-        {% elif category == 'warning' %}
-           {% set alert_class = 'alert-warning' %}
-        {% endif %}
-        <div class="alert {{ alert_class }} alert-dismissible fade show d-flex align-items-center" role="alert">
-           {% if category == 'error' or category == 'danger' %} <i class="bi bi-x-octagon-fill me-2"></i>
-           {% elif category == 'success' %} <i class="bi bi-check-circle-fill me-2"></i>
-           {% elif category == 'warning' %} <i class="bi bi-exclamation-triangle-fill me-2"></i>
-           {% else %} <i class="bi bi-info-circle-fill me-2"></i> {% endif %}
-           <div>{{ message }}</div>
-          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+  <!-- Navbar -->
+  <nav class="bg-white shadow-sm fixed top-0 left-0 right-0 z-40">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex justify-between items-center h-16">
+        <div class="flex items-center">
+          <a class="flex items-center text-lg font-semibold text-indigo-600 hover:text-indigo-800 transition duration-150 ease-in-out"
+            href="{{ url_for('index') }}">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+              stroke="currentColor" class="w-6 h-6 mr-2">
+              <path stroke-linecap="round" stroke-linejoin="round"
+                d="M21.75 9v.906a2.25 2.25 0 0 1-1.183 1.981l-6.478 3.488M2.25 9v.906a2.25 2.25 0 0 0 1.183 1.981l6.478 3.488m8.839 2.51-4.66-2.51m0 0-1.023-.55a2.25 2.25 0 0 0-2.134 0l-1.022.55m0 0-4.661 2.51m16.5 1.615a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V8.844a2.25 2.25 0 0 1 1.183-1.981l7.5-4.039a2.25 2.25 0 0 1 2.134 0l7.5 4.039a2.25 2.25 0 0 1 1.183 1.98V19.5Z" />
+            </svg>
+            Bulk Mailer WebUI
+          </a>
         </div>
-      {% endfor %}
-    {% endif %}
-  {% endwith %}
-
-  <form method="POST" enctype="multipart/form-data" id="email-form">
-    <div class="row g-4">
-      <!-- Left Column: Form Inputs -->
-      <div class="col-lg-6">
-
-        <!-- Card: Email Content -->
-        <div class="card shadow-sm">
-          <div class="card-header bg-light border-bottom">
-            <i class="bi bi-pencil-square me-2"></i><strong>Email Content</strong>
-          </div>
-          <div class="card-body">
-            <!-- Content Source Selection -->
-            <div class="mb-3">
-              <label class="form-label fw-bold">1. Choose Content Source:</label>
-              <div>
-                <div class="form-check form-check-inline">
-                  <input class="form-check-input" type="radio" name="template_source" id="sourceDraft" value="draft" checked>
-                  <label class="form-check-label" for="sourceDraft">Draft Email Below</label>
-                </div>
-                <div class="form-check form-check-inline">
-                  <input class="form-check-input" type="radio" name="template_source" id="sourceUpload" value="upload">
-                  <label class="form-check-label" for="sourceUpload">Upload Template File</label>
-                </div>
-              </div>
-            </div>
-
-            <!-- Upload Template Section -->
-            <div class="mb-3" id="uploadSection" style="display: none;">
-              <label for="template_file" class="form-label">Upload Template (HTML, MD, TXT):</label>
-              <input type="file" name="template_file" id="template_file" class="form-control" accept=".html,.htm,.md,.txt">
-            </div>
-
-            <!-- Draft Email Section -->
-            <div id="draftSection">
-               <label class="form-label">Draft Content:</label>
-              <ul class="nav nav-tabs mb-2" id="editorTabs" role="tablist">
-                <li class="nav-item" role="presentation">
-                  <button class="nav-link active" id="rich-tab" data-bs-toggle="tab" data-bs-target="#rich" type="button" role="tab">Rich Text Editor</button>
-                </li>
-                <li class="nav-item" role="presentation">
-                  <button class="nav-link" id="html-tab" data-bs-toggle="tab" data-bs-target="#html" type="button" role="tab">HTML Source</button>
-                </li>
-              </ul>
-              <div class="tab-content" id="editorTabsContent">
-                <div class="tab-pane fade show active" id="rich" role="tabpanel">
-                  <div id="quillEditor" class="editor-container border rounded"></div>
-                </div>
-                <div class="tab-pane fade" id="html" role="tabpanel">
-                  <textarea id="htmlSource" class="form-control" style="height:300px;" placeholder="Enter or paste HTML source code here..."></textarea>
-                </div>
-              </div>
-              <!-- Hidden textarea -->
-              <textarea name="email_content" id="email_content" style="display:none;"></textarea>
-            </div>
-          </div>
-        </div>
-
-        <!-- Card: Send Options -->
-        <div class="card shadow-sm">
-          <div class="card-header bg-light border-bottom">
-             <i class="bi bi-gear-fill me-2"></i><strong>Send Options</strong>
-          </div>
-          <div class="card-body">
-
-             <!-- Sender Display Name Input -->
-             <div class="mb-3">
-               <label for="custom_display_name" class="form-label fw-bold">Sender Display Name (Optional):</label>
-               <input type="text" name="custom_display_name" id="custom_display_name" class="form-control" placeholder="e.g., Your Company Name">
-               <div class="form-text">If left blank, the default name from settings (<code>.env</code> file) will be used.</div>
-             </div>
-
-             <!-- Subject -->
-            <div class="mb-3">
-              <label for="subject" class="form-label fw-bold">Email Subject:</label>
-              <input type="text" name="subject" id="subject" class="form-control" placeholder="Enter subject (use $header) or leave blank">
-              <div class="form-text">Placeholders like <code>$name</code> or <code>${email}</code> (matching CSV headers) can be used.</div>
-            </div>
-
-            <!-- Sending Method -->
-            <div class="mb-3">
-              <label class="form-label fw-bold">Recipient Method:</label>
-              <div>
-                <div class="form-check form-check-inline">
-                  <input class="form-check-input" type="radio" name="send_method" id="bulk" value="bulk" checked>
-                  <label class="form-check-label" for="bulk">Bulk (Upload CSV)</label>
-                </div>
-                <div class="form-check form-check-inline">
-                  <input class="form-check-input" type="radio" name="send_method" id="manual" value="manual">
-                  <label class="form-check-label" for="manual">Single Recipient</label>
-                </div>
-              </div>
-            </div>
-
-            <!-- Bulk CSV input -->
-            <div class="mb-3" id="csvDiv">
-              <label for="csv_file" class="form-label">Upload CSV File:</label>
-              <input type="file" name="csv_file" id="csv_file" class="form-control" accept=".csv">
-              <div class="form-text">Must contain an 'EMAIL' header (case-insensitive).</div>
-            </div>
-
-            <!-- Manual Email input -->
-            <div class="mb-3" id="manualDiv" style="display: none;">
-              <label for="manual_email" class="form-label">Recipient Email Address:</label>
-              <input type="email" name="manual_email" id="manual_email" class="form-control" placeholder="Enter recipient email">
-            </div>
-
-            <!-- Attachments -->
-            <div class="mb-3">
-              <label for="attachments" class="form-label fw-bold">Attachments (optional):</label>
-              <input type="file" name="attachments" id="attachments" class="form-control" multiple>
-            </div>
-
-            <!-- Action Buttons -->
-             <div class="d-flex justify-content-between align-items-center mt-4 pt-3 border-top">
-               <button type="button" class="btn btn-outline-secondary" id="preview-btn">
-                 <i class="bi bi-eye me-1"></i>Preview
-               </button>
-               <button type="submit" class="btn btn-primary btn-lg">
-                 <i class="bi bi-send-fill me-1"></i>Send Email(s)
-               </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Right Column: Live Preview -->
-      <div class="col-lg-6">
-        <div class="card shadow-sm sticky-lg-top" style="top: 85px;">
-          <div class="card-header bg-light border-bottom">
-            <i class="bi bi-display me-2"></i><strong>Email Preview</strong>
-          </div>
-          <div class="card-body">
-             <div id="preview-instructions" class="text-muted text-center py-5">
-                Click "Preview" after drafting or uploading content.
-             </div>
-            <div id="preview-container">
-                <div class="alert alert-warning small d-flex align-items-center" role="alert">
-                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
-                    <div>Placeholders ($name etc.) are not replaced in preview. Attachments not shown.</div>
-                </div>
-                <hr>
-                <div id="preview-content"></div>
-            </div>
-          </div>
+        <div class="text-sm text-gray-600 flex items-center" id="navbar-status">
+          <!-- Status will be updated by JS -->
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+            stroke="currentColor" class="w-5 h-5 mr-1 text-gray-400">
+            <path stroke-linecap="round" stroke-linejoin="round"
+              d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z" />
+          </svg>
+          Ready
         </div>
       </div>
     </div>
-  </form>
-</div>
+  </nav>
 
+  <!-- Loading Indicator - hidden by default via CSS (display: none) -->
+  <div id="loading-indicator">
+    <div class="flex items-center bg-white p-5 rounded-lg shadow-xl">
+      <svg class="animate-spin h-6 w-6 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none"
+        viewBox="0 0 24 24">
+        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+        <path class="opacity-75" fill="currentColor"
+          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+        </path>
+      </svg>
+      <span class="ml-3 text-base font-medium text-gray-700">Processing... Please wait.</span>
+    </div>
+  </div>
 
-<!-- Bootstrap JS Bundle -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<!-- Quill JS -->
-<script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
-<!-- Marked.js for Markdown conversion -->
-<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <!-- Main Content Area -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-16">
+    <h1 class="text-3xl font-bold text-center text-gray-800 mb-8">Compose and Send Emails</h1>
 
-<script>
-  // --- Quill Editor Setup ---
-  var quill = new Quill('#quillEditor', {
+    <!-- Flash Messages -->
+    <div id="flash-messages" class="mb-8 space-y-4">
+      <!-- Flash messages injected by Flask -->
+      {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+      {% for category, message in messages %}
+      {% set colors = {'default': 'blue', 'error': 'red', 'danger': 'red', 'success': 'green', 'warning': 'yellow',
+      'info': 'blue'} %}
+      {% set icon_svg = {
+      'default': '
+      <path stroke-linecap="round" stroke-linejoin="round"
+        d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z" />
+      ',
+      'info': '
+      <path stroke-linecap="round" stroke-linejoin="round"
+        d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z" />
+      ',
+      'error': '
+      <path stroke-linecap="round" stroke-linejoin="round"
+        d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.008v.008H12v-.008Z" />
+      ',
+      'danger': '
+      <path stroke-linecap="round" stroke-linejoin="round"
+        d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.008v.008H12v-.008Z" />
+      ',
+      'success': '
+      <path stroke-linecap="round" stroke-linejoin="round"
+        d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />',
+      'warning': '
+      <path stroke-linecap="round" stroke-linejoin="round"
+        d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" />'
+      } %}
+      {% set color = colors.get(category, 'blue') %}
+      <div class="flex items-start p-4 border-l-4 border-{{ color }}-500 bg-{{ color }}-50 rounded-lg shadow-sm"
+        role="alert">
+        <div class="flex-shrink-0"> <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+            stroke-width="1.5" stroke="currentColor" class="w-6 h-6 text-{{ color }}-500"> {{ icon_svg.get(category,
+            icon_svg.default) | safe }} </svg> </div>
+        <div class="ml-3 text-sm font-medium text-{{ color }}-800 flex-grow">{{ message }}</div>
+        <button type="button"
+          class="ml-4 -mx-1.5 -my-1.5 text-{{ color }}-500 rounded-lg focus:ring-2 focus:ring-{{ color }}-400 p-1.5 hover:bg-{{ color }}-100 inline-flex h-8 w-8 transition duration-150 ease-in-out"
+          onclick="this.parentElement.style.display='none'" aria-label="Close"> <span class="sr-only">Dismiss</span>
+          <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+            <path fill-rule="evenodd"
+              d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+              clip-rule="evenodd"></path>
+          </svg> </button>
+      </div>
+      {% endfor %}
+      {% endif %}
+      {% endwith %}
+    </div>
+
+    <form method="POST" enctype="multipart/form-data" id="email-form">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+
+        <!-- Left Column: Form Inputs -->
+        <div class="space-y-8">
+
+          <!-- Content Card -->
+          <section class="bg-white shadow-lg rounded-lg overflow-hidden">
+            <header class="px-6 py-4 bg-gray-50 border-b border-gray-200">
+              <h2 class="text-lg font-semibold text-gray-700 flex items-center"><svg xmlns="http://www.w3.org/2000/svg"
+                  fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"
+                  class="w-5 h-5 mr-2 text-indigo-500">
+                  <path stroke-linecap="round" stroke-linejoin="round"
+                    d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" />
+                </svg>Email Content</h2>
+            </header>
+            <div class="p-6 space-y-6">
+              <div><label class="block text-sm font-medium text-gray-700 mb-3">1. Choose Content Source</label>
+                <div class="radio-group-container">
+                  <div><input id="sourceDraft" name="template_source" type="radio" value="draft" checked><label
+                      for="sourceDraft">Draft Below</label></div>
+                  <div><input id="sourceUpload" name="template_source" type="radio" value="upload"><label
+                      for="sourceUpload">Upload Template</label></div>
+                </div>
+              </div>
+              <div class="hidden" id="uploadSection"><label for="template_file"
+                  class="block text-sm font-medium text-gray-700 mb-1">Upload Template File</label><input type="file"
+                  name="template_file" id="template_file"
+                  class="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 focus:outline-none"
+                  accept=".html,.htm,.md,.txt"><span id="template-filename-display"
+                  class="text-xs text-gray-500 mt-1 block hidden"></span>
+                <p class="mt-1 text-xs text-gray-500">Allowed types: HTML, HTM, MD, TXT.</p>
+              </div>
+              <div id="draftSection"><label class="block text-sm font-medium text-gray-700 mb-3">2. Draft
+                  Content</label>
+                <div class="border-b border-gray-200 mb-0">
+                  <nav class="-mb-px flex space-x-4" id="editorTabs"><button type="button" id="rich-tab"
+                      class="editor-tab active" aria-current="page">Rich Text Editor</button><button type="button"
+                      id="html-tab" class="editor-tab">HTML Source</button></nav>
+                </div>
+                <div id="editorTabsContent" class="mt-0">
+                  <div id="rich" role="tabpanel">
+                    <div id="quillEditor"></div>
+                  </div>
+                  <div id="html" class="hidden" role="tabpanel"><textarea id="htmlSource"
+                      class="block w-full rounded-md rounded-t-none border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                      style="height:342px;" placeholder="Enter or paste HTML source code here..."></textarea></div>
+                </div><textarea name="email_content" id="email_content" class="hidden"></textarea>
+              </div>
+            </div>
+          </section>
+
+          <!-- Options Card -->
+          <section class="bg-white shadow-lg rounded-lg overflow-hidden">
+            <header class="px-6 py-4 bg-gray-50 border-b border-gray-200">
+              <h2 class="text-lg font-semibold text-gray-700 flex items-center"><svg xmlns="http://www.w3.org/2000/svg"
+                  fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"
+                  class="w-5 h-5 mr-2 text-indigo-500">
+                  <path stroke-linecap="round" stroke-linejoin="round"
+                    d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.325.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.431l-1.004.827c-.29.24-.438.613-.43.992a6.759 6.759 0 0 1 0 1.885c-.008.378.14.751.43.991l1.005.827c.483.398.594 1.064.26 1.43l-1.296 2.247a1.125 1.125 0 0 1-1.37.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.47 6.47 0 0 1-.22.128c-.331.183-.581.495-.644.869l-.213 1.281c-.09.543-.56.94-1.11.94h-2.594c-.55 0-1.019-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 0 1-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 0 1-1.37-.49l-1.296-2.247a1.125 1.125 0 0 1 .26-1.431l1.004-.827c.29-.24.438-.613.43-.992a6.759 6.759 0 0 1 0-1.885c.008-.378-.14-.751-.43-.991l-1.004-.827a1.125 1.125 0 0 1-.26-1.43l1.296-2.247a1.125 1.125 0 0 1 1.37-.49l1.217.456c.355.133.75.072 1.076-.124.072-.044.146-.086.22-.128.332-.183.582-.495.644-.869l.213-1.28Z" />
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                </svg>Options & Recipients</h2>
+            </header>
+            <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-6">
+              <div><label for="custom_display_name" class="block text-sm font-medium text-gray-700">Sender Name
+                  (Optional)</label><input type="text" name="custom_display_name" id="custom_display_name"
+                  class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                  placeholder="Defaults to .env setting"></div>
+              <div><label for="subject" class="block text-sm font-medium text-gray-700">Subject</label><input
+                  type="text" name="subject" id="subject"
+                  class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                  placeholder="Use $header for variables">
+                <p class="mt-1 text-xs text-gray-500">Leave blank to attempt auto-detection from content.</p>
+              </div>
+              <div class="md:col-span-2"><label class="block text-sm font-medium text-gray-700 mb-3">3. Choose Recipient
+                  Method</label>
+                <div class="radio-group-container">
+                  <div><input id="bulk" name="send_method" type="radio" value="bulk" checked><label for="bulk">Bulk
+                      (Upload CSV)</label></div>
+                  <div><input id="manual" name="send_method" type="radio" value="manual"><label for="manual">Single
+                      Recipient</label></div>
+                </div>
+              </div>
+              <div id="csvDiv" class="md:col-span-2"><label for="csv_file"
+                  class="block text-sm font-medium text-gray-700 mb-1">Upload CSV File</label><input type="file"
+                  name="csv_file" id="csv_file"
+                  class="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 focus:outline-none"
+                  accept=".csv" required><span id="csv-filename-display"
+                  class="text-xs text-gray-500 mt-1 block hidden"></span>
+                <p class="mt-1 text-xs text-gray-500">Must include an 'EMAIL' header (case-insensitive).</p>
+              </div>
+              <div id="manualDiv" class="hidden md:col-span-2"><label for="manual_email"
+                  class="block text-sm font-medium text-gray-700">Recipient Email Address</label><input type="email"
+                  name="manual_email" id="manual_email"
+                  class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                  placeholder="recipient@example.com"></div>
+              <div class="md:col-span-2"><label for="attachments"
+                  class="block text-sm font-medium text-gray-700 mb-1">Attachments (Optional)</label><input type="file"
+                  name="attachments" id="attachments"
+                  class="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 focus:outline-none"
+                  multiple><span id="attachments-filename-display"
+                  class="text-xs text-gray-500 mt-1 block hidden"></span></div>
+            </div>
+            <footer class="px-6 py-4 bg-gray-50 border-t border-gray-200 flex justify-between items-center"><button
+                type="button" id="preview-btn"
+                class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-150 ease-in-out"><svg
+                  xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                  stroke="currentColor" class="w-5 h-5 mr-2 text-gray-400">
+                  <path stroke-linecap="round" stroke-linejoin="round"
+                    d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                </svg>Preview</button><button type="submit"
+                class="inline-flex items-center px-6 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-150 ease-in-out"><svg
+                  xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                  stroke="currentColor" class="w-5 h-5 mr-2 transform rotate-45">
+                  <path stroke-linecap="round" stroke-linejoin="round"
+                    d="M6 12 3.269 3.125A59.769 59.769 0 0 1 21.485 12 59.768 59.768 0 0 1 3.27 20.875L5.999 12Zm0 0h7.5" />
+                </svg>Send Email(s)</button></footer>
+          </section>
+        </div>
+
+        <!-- Right Column: Preview -->
+        <aside>
+          <div class="sticky-preview bg-white shadow-lg rounded-lg overflow-hidden">
+            <header class="px-6 py-4 bg-gray-50 border-b border-gray-200">
+              <h2 class="text-lg font-semibold text-gray-700 flex items-center"><svg xmlns="http://www.w3.org/2000/svg"
+                  fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"
+                  class="w-5 h-5 mr-2 text-indigo-500">
+                  <path stroke-linecap="round" stroke-linejoin="round"
+                    d="M9 17.25v1.007a3 3 0 0 1-.879 2.122L7.5 21h9l-.621-.621A3 3 0 0 1 15 18.257V17.25m6-12V15a2.25 2.25 0 0 1-2.25 2.25H5.25A2.25 2.25 0 0 1 3 15V5.25m18 0A2.25 2.25 0 0 0 18.75 3H5.25A2.25 2.25 0 0 0 3 5.25m18 0V12a2.25 2.25 0 0 1-2.25 2.25H5.25A2.25 2.25 0 0 1 3 12V5.25" />
+                </svg>Live Preview</h2>
+            </header>
+
+            <!-- Preview Content Area -->
+            <div class="p-6 space-y-4">
+              <div id="preview-instructions" class="text-center text-gray-500 py-16"><svg
+                  xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                  stroke="currentColor" class="w-12 h-12 mx-auto text-gray-300 mb-4">
+                  <path stroke-linecap="round" stroke-linejoin="round"
+                    d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                </svg>Click "Preview" to see your email here.</div>
+
+              <!-- Preview Container (Initially hidden) -->
+              <div id="preview-container" class="hidden">
+                <!-- Preview Warning -->
+                <div
+                  class="flex items-start p-3 text-xs text-yellow-800 bg-yellow-50 border border-yellow-200 rounded-md mb-4"
+                  role="alert">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                    stroke="currentColor" class="w-5 h-5 mr-2 flex-shrink-0 text-yellow-500">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                      d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.008v.008H12v-.008Z" />
+                  </svg>
+                  <span>Placeholders (like $name) won't be replaced. Attachments not shown.</span>
+                </div>
+                <hr class="my-4 border-gray-200">
+
+                <!-- Preview Tabs -->
+                <div class="border-b border-gray-200 mb-4">
+                  <nav class="-mb-px flex space-x-4 justify-center" id="previewTabs" aria-label="Preview Tabs">
+                    <button type="button" id="desktop-preview-tab" class="preview-tab active"
+                      aria-controls="desktopPreviewPanel" role="tab" aria-selected="true">
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1 inline-block" viewBox="0 0 20 20"
+                        fill="currentColor">
+                        <path fill-rule="evenodd"
+                          d="M3 5a2 2 0 012-2h10a2 2 0 012 2v8a2 2 0 01-2 2h-2.22l.123.492a.75.75 0 01-.738 1.008H7.835a.75.75 0 01-.738-1.008l.123-.492H5a2 2 0 01-2-2V5zm2-1a1 1 0 00-1 1v8a1 1 0 001 1h10a1 1 0 001-1V5a1 1 0 00-1-1H5z"
+                          clip-rule="evenodd" />
+                      </svg>
+                      Desktop
+                    </button>
+                    <button type="button" id="mobile-preview-tab" class="preview-tab" aria-controls="mobilePreviewPanel"
+                      role="tab" aria-selected="false">
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1 inline-block" viewBox="0 0 20 20"
+                        fill="currentColor">
+                        <path fill-rule="evenodd"
+                          d="M7 2a2 2 0 00-2 2v12a2 2 0 002 2h6a2 2 0 002-2V4a2 2 0 00-2-2H7zm0 1a1 1 0 00-1 1v12a1 1 0 001 1h6a1 1 0 001-1V4a1 1 0 00-1-1H7z"
+                          clip-rule="evenodd" />
+                        <path d="M10 14a1 1 0 100-2 1 1 0 000 2z" />
+                      </svg>
+                      Mobile
+                    </button>
+                  </nav>
+                </div>
+
+                <!-- Preview Tab Panels -->
+                <div id="previewTabsContent">
+                  <!-- Desktop Preview Panel -->
+                  <div id="desktopPreviewPanel" role="tabpanel" aria-labelledby="desktop-preview-tab">
+                    <div id="desktop-preview-content" class="prose prose-sm max-w-none">
+                      <!-- Desktop preview content injected here -->
+                    </div>
+                  </div>
+                  <!-- Mobile Preview Panel (hidden by default) -->
+                  <div id="mobilePreviewPanel" class="hidden" role="tabpanel" aria-labelledby="mobile-preview-tab">
+                    <div id="mobile-preview-content" class="prose prose-sm max-w-none">
+                      <!-- Mobile preview content injected here -->
+                    </div>
+                  </div>
+                </div>
+              </div> <!-- End Preview Container -->
+            </div>
+          </div>
+        </aside>
+
+      </div> <!-- End grid -->
+    </form>
+  </main>
+
+  <!-- Quill JS -->
+  <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
+  <!-- Marked.js for Markdown conversion -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+  <script>
+    // --- Quill Editor Setup ---
+    var quill = new Quill('#quillEditor', {
       modules: {
         toolbar: [
           [{ 'header': [1, 2, 3, false] }],
           ['bold', 'italic', 'underline', 'strike'],
-          [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+          [{ 'list': 'ordered' }, { 'list': 'bullet' }],
           [{ 'align': [] }],
-          ['link', 'image'],
+          ['link', 'image'], // Consider adding 'video' if needed
           ['clean']
         ]
       },
       placeholder: 'Compose your email here...',
       theme: 'snow'
-  });
+    });
 
-  // Sync Quill to HTML Source textarea and vice-versa
-  const quillEditor = document.getElementById('quillEditor').querySelector('.ql-editor');
-  const htmlSource = document.getElementById('htmlSource');
-  const richTab = document.getElementById('rich-tab');
-  const htmlTab = document.getElementById('html-tab');
+    // --- Tab & Editor Sync Logic ---
+    const quillEditorContainer = document.getElementById('quillEditor');
+    const htmlSource = document.getElementById('htmlSource');
+    const richTabButton = document.getElementById('rich-tab');
+    const htmlTabButton = document.getElementById('html-tab');
+    const richPanel = document.getElementById('rich');
+    const htmlPanel = document.getElementById('html');
+    const editorTabs = document.getElementById('editorTabs'); // Container for tabs
 
-  quill.on('text-change', (delta, oldDelta, source) => {
-    if (source === 'user') {
-      htmlSource.value = quill.root.innerHTML;
-    }
-  });
-  htmlSource.addEventListener('input', () => {
-     quill.clipboard.dangerouslyPasteHTML(htmlSource.value);
-  });
-  htmlTab.addEventListener('show.bs.tab', () => {
-      htmlSource.value = quill.root.innerHTML;
-  });
-
-  // --- Form Logic ---
-  function prepareEmailContentForSubmit() {
-      const templateSource = document.querySelector('input[name="template_source"]:checked').value;
-      if (templateSource === 'draft') {
-          const activeTabId = document.querySelector('#editorTabs .nav-link.active').id;
-          document.getElementById("email_content").value = (activeTabId === "rich-tab")
-              ? quill.root.innerHTML
-              : document.getElementById("htmlSource").value;
+    // Function to switch EDITOR tabs
+    function switchEditorTab(targetTab) {
+      const isRichTab = targetTab === 'rich';
+      richPanel.classList.toggle('hidden', !isRichTab);
+      htmlPanel.classList.toggle('hidden', isRichTab);
+      richTabButton.classList.toggle('active', isRichTab);
+      htmlTabButton.classList.toggle('active', !isRichTab);
+      richTabButton.setAttribute('aria-current', isRichTab ? 'page' : 'false');
+      htmlTabButton.setAttribute('aria-current', !isRichTab ? 'page' : 'false');
+      if (isRichTab) {
+        // Check if htmlPanel exists and is not hidden before pasting
+        if (htmlPanel && !htmlPanel.classList.contains('hidden')) { quill.clipboard.dangerouslyPasteHTML(htmlSource.value); }
       } else {
-          document.getElementById("email_content").value = "";
+        // Check if quill exists before accessing its properties
+        if (quill && quill.root) { htmlSource.value = quill.root.innerHTML; }
       }
-  }
+    }
 
-  const emailForm = document.getElementById('email-form');
-  const loadingIndicator = document.getElementById('loading-indicator');
-  // *** ADDED: Get navbar status element ***
-  const navbarStatus = document.getElementById('navbar-status');
+    // Event listeners for EDITOR tab clicks
+    richTabButton?.addEventListener('click', () => switchEditorTab('rich')); // Optional chaining
+    htmlTabButton?.addEventListener('click', () => switchEditorTab('html')); // Optional chaining
 
-  emailForm.addEventListener('submit', (event) => {
-      prepareEmailContentForSubmit();
-      // *** ADDED: Update Navbar Status on Submit ***
-      navbarStatus.innerHTML = `
-        <div class="spinner-border spinner-border-sm text-secondary me-2" role="status">
-            <span class="visually-hidden">Loading...</span>
-        </div>Processing...`;
-      // Show the main overlay indicator
-      loadingIndicator.style.display = 'flex';
-      // NOTE: True real-time updates like "Sending to user@example.com..." would require
-      // WebSockets or Server-Sent Events, which is a more complex setup.
-      // This simpler approach shows "Processing..." until the result page loads.
-  });
+    // Sync Quill changes to HTML source only when HTML tab is visible
+    if (quill) { // Check if quill is initialized
+      quill.on('text-change', (delta, oldDelta, source) => { if (source === 'user' && htmlPanel && !htmlPanel.classList.contains('hidden')) { htmlSource.value = quill.root.innerHTML; } });
+    }
 
-  // --- Preview Functionality ---
-  document.getElementById("preview-btn").addEventListener("click", () => {
-      const templateSource = document.querySelector('input[name="template_source"]:checked').value;
-      let content = "";
-      const previewContentEl = document.getElementById("preview-content");
-      const previewContainerEl = document.getElementById("preview-container");
-      const previewInstructionsEl = document.getElementById("preview-instructions");
+    // --- Form Logic ---
+    function prepareEmailContentForSubmit() {
+      const templateSourceInput = document.querySelector('input[name="template_source"]:checked');
+      if (!templateSourceInput) return; // Guard clause
+      const templateSource = templateSourceInput.value;
 
-      const displayPreview = (htmlContent) => {
-           previewContentEl.innerHTML = htmlContent;
-           previewContainerEl.style.display = "block";
-           previewInstructionsEl.style.display = "none";
-      };
+      if (templateSource === 'draft') {
+        const isHtmlTabActive = htmlPanel && !htmlPanel.classList.contains('hidden');
+        document.getElementById("email_content").value = isHtmlTabActive ? htmlSource.value : (quill?.root?.innerHTML || ''); // Handle potential nulls
+      } else {
+        const emailContentEl = document.getElementById("email_content");
+        if (emailContentEl) emailContentEl.value = "";
+      }
+    }
 
-      const escapeHtml = (unsafe) => unsafe.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+    const emailForm = document.getElementById('email-form');
+    const loadingIndicator = document.getElementById('loading-indicator');
+    const navbarStatus = document.getElementById('navbar-status');
 
-      const parseMd = (mdContent) => {
-          try {
-              marked.setOptions({ breaks: true });
-              return marked.parse(mdContent);
-          } catch (err) {
-              console.error("Markdown parsing error:", err);
-              return '<pre>' + escapeHtml(mdContent) + '</pre>';
+    if (emailForm) {
+      emailForm.addEventListener('submit', (event) => {
+        prepareEmailContentForSubmit();
+        if (navbarStatus) {
+          navbarStatus.innerHTML = `<svg class="animate-spin h-5 w-5 text-gray-500 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>Processing...`;
+        }
+        loadingIndicator?.classList.add('is-active'); // Optional chaining
+      });
+    }
+
+    // --- Preview Functionality ---
+    const desktopPreviewContentEl = document.getElementById("desktop-preview-content");
+    const mobilePreviewContentEl = document.getElementById("mobile-preview-content");
+    const previewContainerEl = document.getElementById("preview-container");
+    const previewInstructionsEl = document.getElementById("preview-instructions");
+    const previewButton = document.getElementById("preview-btn");
+
+    // Preview Tab Elements
+    const desktopPreviewTabButton = document.getElementById("desktop-preview-tab");
+    const mobilePreviewTabButton = document.getElementById("mobile-preview-tab");
+    const desktopPreviewPanel = document.getElementById("desktopPreviewPanel");
+    const mobilePreviewPanel = document.getElementById("mobilePreviewPanel");
+
+    // displayPreview updates both preview areas
+    const displayPreview = (htmlContent) => {
+      if (desktopPreviewContentEl) desktopPreviewContentEl.innerHTML = htmlContent;
+      if (mobilePreviewContentEl) mobilePreviewContentEl.innerHTML = htmlContent; // Inject same content
+      previewContainerEl?.classList.remove("hidden"); // Optional chaining
+      previewInstructionsEl?.classList.add("hidden"); // Optional chaining
+    };
+
+    const escapeHtml = (unsafe) => unsafe ? unsafe
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;")
+      : '';
+    ;
+
+    const parseMd = (mdContent) => {
+      if (typeof marked === 'undefined') { console.error("Marked library not loaded."); return `<p>Error: Markdown library not loaded.</p>`; } // Check if marked exists
+      try {
+        marked.setOptions({ breaks: true, gfm: true });
+        const renderer = new marked.Renderer();
+        renderer.link = (href, title, text) => {
+          const Mtitle = title ? ` title="${escapeHtml(title)}"` : ''; // Escape title
+          let target = '';
+          // *** UPDATED Check: Ensure href is a string before calling startsWith ***
+          if (typeof href === 'string' && (href.startsWith('http://') || href.startsWith('https://') || href.startsWith('//'))) {
+            target = ' target="_blank" rel="noopener noreferrer"'; // Add rel for security
           }
-      };
+          // Ensure href is a string and escape it for the attribute
+          const safeHref = typeof href === 'string' ? escapeHtml(href) : '#';
+          return `<a href="${safeHref}"${target}${Mtitle}>${text}</a>`; // text is already handled by marked
+        };
+        return marked.parse(mdContent, { renderer });
+      } catch (err) {
+        console.error("Markdown parsing error:", err);
+        const safeErrorMessage = escapeHtml(err.message);
+        const safeMdContent = escapeHtml(mdContent);
+        return `<div class="text-red-600 font-mono text-xs p-2 bg-red-50 rounded">Markdown Error: ${safeErrorMessage}</div><pre class="mt-2 p-2 bg-gray-100 rounded text-xs">${safeMdContent}</pre>`;
+      }
+    };
 
-      if (templateSource === "upload") {
+
+    if (previewButton) {
+      previewButton.addEventListener("click", () => {
+        const templateSourceInput = document.querySelector('input[name="template_source"]:checked');
+        if (!templateSourceInput) return; // Guard clause
+        const templateSource = templateSourceInput.value;
+        let rawContent = "";
+
+        if (templateSource === "upload") {
           const fileInput = document.getElementById("template_file");
-          if (!fileInput.files.length) { alert("Please select a template file to preview."); return; }
+          if (!fileInput || !fileInput.files.length) { alert("Please select a template file to preview."); return; }
           const file = fileInput.files[0];
           const reader = new FileReader();
           reader.onload = (e) => {
-              content = e.target.result;
-              if (file.name.toLowerCase().endsWith('.md') || (!/<\/?[a-z][\s\S]*>/i.test(content.substring(0, 1000)))) {
-                  content = parseMd(content);
-              }
-              displayPreview(content);
+            rawContent = e.target.result;
+            let finalContent = ''; const filenameLower = file.name.toLowerCase();
+            if (filenameLower.endsWith('.md')) { finalContent = parseMd(rawContent); }
+            else if (filenameLower.endsWith('.txt')) { finalContent = `<pre class="whitespace-pre-wrap text-sm">${escapeHtml(rawContent)}</pre>`; }
+            else if (filenameLower.endsWith('.html') || filenameLower.endsWith('.htm') || /<\/?[a-z][\s\S]*>/i.test(rawContent.substring(0, 1000))) { finalContent = rawContent; }
+            else { finalContent = parseMd(rawContent); }
+            displayPreview(finalContent);
           };
           reader.onerror = () => alert("Error reading the template file.");
           reader.readAsText(file);
-      } else { // Draft option
-          const activeTabId = document.querySelector('#editorTabs .nav-link.active').id;
-          content = (activeTabId === "rich-tab") ? quill.root.innerHTML : document.getElementById("htmlSource").value;
-          // Try parsing as markdown if it looks like plain text/markdown in HTML source view
-          if (activeTabId === "html-tab" && !/<\/?[a-z][\s\S]*>/i.test(content.substring(0, 1000))) {
-              content = parseMd(content);
+        } else { // Draft option
+          const isHtmlTabActive = htmlPanel && !htmlPanel.classList.contains('hidden');
+          if (isHtmlTabActive) { rawContent = htmlSource.value; }
+          else {
+            if (quill && quill.root) {
+              htmlSource.value = quill.root.innerHTML; // Sync before reading from quill
+              rawContent = quill.root.innerHTML;
+            } else {
+              rawContent = ''; // Fallback if quill isn't ready
+            }
           }
-          if (!content.trim()) { alert("Draft is empty. Please write some content to preview."); return; }
-          displayPreview(content);
-      }
-  });
+          let finalContent = '';
+          if (isHtmlTabActive && rawContent && !/<\/?[a-z][\s\S]*>/i.test(rawContent.substring(0, 1000))) { finalContent = parseMd(rawContent); }
+          else { finalContent = rawContent || ''; } // Ensure finalContent is always a string
+          if (!finalContent.trim()) { alert("Draft is empty. Please write some content to preview."); return; }
+          displayPreview(finalContent);
+        }
+      });
+    }
 
-  // --- UI Toggles ---
-  const bulkRadio = document.getElementById("bulk");
-  const manualRadio = document.getElementById("manual");
-  const csvDiv = document.getElementById("csvDiv");
-  const manualDiv = document.getElementById("manualDiv");
-  const csvInput = document.getElementById("csv_file");
-  const manualInput = document.getElementById("manual_email");
-  const templateInput = document.getElementById("template_file");
-  const sourceUpload = document.getElementById("sourceUpload");
-  const sourceDraft = document.getElementById("sourceDraft");
-  const uploadSection = document.getElementById("uploadSection");
-  const draftSection = document.getElementById("draftSection");
+    // --- Preview Tab Switching Logic ---
+    function switchPreviewTab(targetTab) {
+      const isDesktop = targetTab === 'desktop';
+      desktopPreviewPanel?.classList.toggle('hidden', !isDesktop); // Optional chaining
+      mobilePreviewPanel?.classList.toggle('hidden', isDesktop); // Optional chaining
+      desktopPreviewTabButton?.classList.toggle('active', isDesktop); // Optional chaining
+      mobilePreviewTabButton?.classList.toggle('active', !isDesktop); // Optional chaining
+      desktopPreviewTabButton?.setAttribute('aria-selected', isDesktop); // Optional chaining
+      mobilePreviewTabButton?.setAttribute('aria-selected', !isDesktop); // Optional chaining
+    }
+    desktopPreviewTabButton?.addEventListener('click', () => switchPreviewTab('desktop')); // Optional chaining
+    mobilePreviewTabButton?.addEventListener('click', () => switchPreviewTab('mobile')); // Optional chaining
 
-  const toggleSendMethod = () => {
+    // --- UI Toggles (Sections) ---
+    const bulkRadio = document.getElementById("bulk"); const manualRadio = document.getElementById("manual"); const csvDiv = document.getElementById("csvDiv"); const manualDiv = document.getElementById("manualDiv"); const csvInput = document.getElementById("csv_file"); const manualInput = document.getElementById("manual_email");
+    const sourceUploadRadio = document.getElementById("sourceUpload"); const sourceDraftRadio = document.getElementById("sourceDraft"); const uploadSection = document.getElementById("uploadSection"); const draftSection = document.getElementById("draftSection"); const templateInput = document.getElementById("template_file");
+
+    const toggleSendMethod = () => {
+      if (!manualRadio || !csvDiv || !manualDiv || !manualInput || !csvInput) return; // Guard
       const isManual = manualRadio.checked;
-      manualDiv.style.display = isManual ? "block" : "none";
-      csvDiv.style.display = isManual ? "none" : "block";
+      manualDiv.classList.toggle('hidden', !isManual);
+      csvDiv.classList.toggle('hidden', isManual);
       manualInput.required = isManual;
       csvInput.required = !isManual;
-  };
-
-  const toggleContentSource = () => {
-      const isUpload = sourceUpload.checked;
-      uploadSection.style.display = isUpload ? "block" : "none";
-      draftSection.style.display = isUpload ? "none" : "block";
+    };
+    const toggleContentSource = () => {
+      if (!sourceUploadRadio || !uploadSection || !draftSection || !templateInput || !htmlSource) return; // Guard
+      const isUpload = sourceUploadRadio.checked;
+      uploadSection.classList.toggle('hidden', !isUpload);
+      draftSection.classList.toggle('hidden', isUpload);
       templateInput.required = isUpload;
-      // No need to require quill editor content directly, check on submit
-  };
+      if (quill) { quill.enable(!isUpload); }
+      htmlSource.disabled = isUpload;
+    };
 
-  bulkRadio.addEventListener("change", toggleSendMethod);
-  manualRadio.addEventListener("change", toggleSendMethod);
-  sourceUpload.addEventListener("change", toggleContentSource);
-  sourceDraft.addEventListener("change", toggleContentSource);
+    bulkRadio?.addEventListener("change", toggleSendMethod); // Optional chaining
+    manualRadio?.addEventListener("change", toggleSendMethod); // Optional chaining
+    sourceUploadRadio?.addEventListener("change", toggleContentSource); // Optional chaining
+    sourceDraftRadio?.addEventListener("change", toggleContentSource); // Optional chaining
 
-  document.addEventListener("DOMContentLoaded", () => {
+    // --- Function to display selected filename ---
+    function displayFilename(inputId, displayId) {
+      const input = document.getElementById(inputId);
+      const display = document.getElementById(displayId);
+      if (!input || !display) return; // Guard clause
+
+      input.addEventListener('change', function (e) {
+        let fileNameText = '';
+        if (this.files && this.files.length > 1) {
+          fileNameText = `${this.files.length} files selected`;
+        } else if (this.files && this.files.length == 1) {
+          fileNameText = this.files[0].name;
+        }
+
+        if (fileNameText) {
+          display.textContent = fileNameText;
+          display.classList.remove('hidden');
+        } else {
+          display.textContent = ''; // Clear text
+          display.classList.add('hidden'); // Hide display area
+        }
+      });
+    }
+
+    // Initial setup on page load
+    document.addEventListener("DOMContentLoaded", () => {
+      // Essential elements check
+      if (!loadingIndicator || !emailForm || !navbarStatus || !richTabButton || !desktopPreviewTabButton) {
+        console.error("Core interactive elements missing!");
+        return;
+      }
+
       toggleSendMethod();
       toggleContentSource();
-      // *** Set initial navbar status ***
-      navbarStatus.innerHTML = '<i class="bi bi-info-circle me-1"></i>Ready';
-      loadingIndicator.style.display = 'none'; // Ensure loading indicator is hidden initially
-  });
-</script>
+      navbarStatus.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 mr-1 text-gray-400"><path stroke-linecap="round" stroke-linejoin="round" d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z" /></svg>Ready`;
+      loadingIndicator.classList.remove('is-active');
+      switchEditorTab('rich');
+      switchPreviewTab('desktop'); // Set default preview tab
+
+      // Setup filename display listeners - Use optional chaining for safety
+      displayFilename('template_file', 'template-filename-display');
+      displayFilename('csv_file', 'csv-filename-display');
+      displayFilename('attachments', 'attachments-filename-display');
+
+      console.log("DOM fully loaded and initial setup complete.");
+    });
+  </script>
+
 </body>
+
 </html>

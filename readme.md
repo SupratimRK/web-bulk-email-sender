@@ -2,12 +2,14 @@
 
 A sleek, modern, and feature-rich web UI for sending personalized emails, either individually or in bulk. Perfect for newsletters, notifications, marketing campaigns, or any scenario requiring customized email distribution. Users can **upload HTML/Markdown/Text templates** or **craft emails directly** using a powerful rich-text editor with an HTML source view.
 
-Built with **Flask**, **Bootstrap 5**, **Quill.js**, and **Marked.js**.
+Built with **Flask** and **Tailwind CSS** for a clean, responsive, and utility-first frontend experience, along with **Quill.js** and **Marked.js**.
 
 ---
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/SupratimRK/web-bulk-email-sender/refs/heads/main/screenshot.png" alt="Live Screenshot of App" style="border-radius: 10px; max-width: 100%; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
+  <!-- ** ACTION REQUIRED: Please replace this screenshot with a new one reflecting the Tailwind CSS UI! ** -->
+  <img src="screenshot.png" alt="Live Screenshot of App (May be outdated)" style="border-radius: 10px; max-width: 100%; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
+  <br><em>(Current screenshot may show older Bootstrap version)</em>
 </p>
 
 ---
@@ -22,10 +24,15 @@ Built with **Flask**, **Bootstrap 5**, **Quill.js**, and **Marked.js**.
     *   **Single Recipient**: Quickly send a test or one-off email by typing the address directly.
 *   **🎨 Dynamic Personalization**:
     *   Use placeholders like `$name` or `${header}` in your subject and email body (matching your CSV column headers) for personalized messages. **(See 'Using Variables' section below)**
-*   **🖼️ Live Email Preview**:
-    *   Instantly see how your drafted or uploaded content will render before sending. (Note: Placeholders are not substituted in the preview).
+*   **🖼️ Enhanced Live Email Preview**:
+    *   Instantly see how your drafted or uploaded content will render before sending.
+    *   **Desktop & Mobile Views**: Toggle between a full-width desktop preview and a constrained mobile-width preview using dedicated tabs.
+    *   *(Note: Placeholders are not substituted in the preview).*
+    *   Improved Markdown link handling for robustness and security (`rel="noopener noreferrer"` added to external links).
 *   **📎 Attachment Support**:
     *   Easily attach one or more files to your emails.
+*   **📄 Filename Display**:
+    *   Selected filenames for templates, CSVs, and attachments are now displayed for better user experience.
 *   **👤 Custom Sender Name**:
     *   Optionally override the default sender display name (set in `.env`) for specific campaigns.
 *   **✉️ HTML & Plain Text**:
@@ -35,20 +42,20 @@ Built with **Flask**, **Bootstrap 5**, **Quill.js**, and **Marked.js**.
     *   Supports standard SMTP servers and ports, including TLS.
 *   **📊 Detailed Results & Logging**:
     *   Redirects to a results page after sending, showing a summary (Sent, Failed, Skipped) and a detailed log for each attempted email.
-    *   Clear success/failure/info icons for quick status assessment.
+    *   Clear success/failure/warning/info icons for quick status assessment.
 *   **💡 Smart & Responsive UI**:
-    *   Built with Bootstrap 5 for a clean look on all devices.
-    *   Form sections dynamically show/hide based on selected options.
-    *   Navbar status indicator provides real-time feedback during processing and shows the final result.
-    *   Loading indicator prevents accidental double-sends.
+    *   **Modern Styling**: Built with **Tailwind CSS** for a clean, utility-first, and responsive design that adapts well to different screen sizes.
+    *   **Dynamic Sections**: Form sections dynamically show/hide based on selected options (e.g., Draft vs Upload, Bulk vs Single).
+    *   **Real-time Feedback**: Navbar status indicator provides feedback during processing and shows the final result summary.
+    *   **Loading State**: An overlay loading indicator prevents accidental double-sends during processing.
 *   **✅ Robust Error Handling**:
-    *   Validates file types, checks for required inputs, handles CSV parsing errors, and provides informative SMTP error messages.
+    *   Validates file types, checks for required inputs, handles CSV parsing errors, gracefully handles Markdown parsing issues, and provides informative SMTP error messages.
 
 ## 💻 Tech Stack
 
 *   **Backend**: Flask (Python)
 *   **Frontend**: HTML, CSS, JavaScript
-*   **Styling**: Bootstrap 5, Bootstrap Icons
+*   **Styling**: **Tailwind CSS** (via CDN for simplicity)
 *   **Rich Text Editor**: Quill.js
 *   **Markdown Parsing**: Marked.js (Frontend Preview), Python-Markdown (Backend Processing)
 *   **Email Generation**: Standard Python `email` library, `smtplib`
@@ -57,11 +64,11 @@ Built with **Flask**, **Bootstrap 5**, **Quill.js**, and **Marked.js**.
 
 ## 🛠️ Setup & Installation
 
-Follow these steps to get the application running on your local machine.
+Follow these steps to get the application running on your local machine for development or testing. For production deployment, see the "Running for Production" section below.
 
 ### ✅ Prerequisites
 
-*   **Python**: Version 3.7 or newer recommended (due to Flask 2.x+ dependencies).
+*   **Python**: Version 3.7 or newer recommended.
 *   **pip**: Python package installer (usually comes with Python).
 *   **Git**: For cloning the repository.
 *   **(Optional but Recommended)** A Python virtual environment manager (`venv`).
@@ -102,7 +109,7 @@ Follow these steps to get the application running on your local machine.
 
 ### 🔒 Environment Variables (`.env` File)
 
-Create a file named `.env` in the project root directory (where `app.py` is located) and add the following variables:
+Create a file named `.env` in the project root directory (where `app.py` is located) and add the following variables. **This file contains secrets and should NOT be committed to Git.**
 
 ```dotenv
 # .env - DO NOT COMMIT THIS FILE TO GIT!
@@ -114,42 +121,46 @@ display_name="Your Default Sender Name"
 sender_email="your_email@example.com"
 
 # Your email account password or an App Password (Recommended!)
+# For Gmail, enable 2FA and generate an App Password:
+# https://support.google.com/accounts/answer/185833?hl=en
 password="your_password_or_app_password"
 
 # SMTP Server Configuration (Examples below)
 MAILER_HOST="smtp.yourprovider.com" # e.g., smtp.gmail.com, smtp.mailersend.net
 MAILER_PORT="587"                   # Common ports: 587 (TLS), 465 (SSL), 25 (Insecure)
 
-# Flask Secret Key (for session management, flash messages)
-# Change this to a random string for better security
+# Flask Secret Key (REQUIRED for sessions/flash messages)
+# Generate a strong random key, e.g., using: python -c 'import secrets; print(secrets.token_hex(16))'
+# CHANGE THIS FROM THE DEFAULT VALUE FOR PRODUCTION!
 FLASK_SECRET_KEY="a_default_but_less_secure_key_please_change_me"
 ```
 
 **Important Notes**:
 
-*   **Security**: **NEVER** commit your `.env` file to version control (Git). The `.gitignore` file should ideally prevent this, but always be cautious.
-*   **App Passwords**: If using Gmail or some other providers, it's highly recommended (or required) to enable 2-Factor Authentication (2FA) and generate an **App Password** specifically for this application instead of using your main account password.
-    *   [Gmail App Passwords Guide](https://support.google.com/accounts/answer/185833?hl=en)
-*   **SMTP Settings**: Ensure `MAILER_HOST` and `MAILER_PORT` are correct for your email provider. The code currently uses STARTTLS for port 587. If using port 465 (implicit SSL), the `smtplib.SMTP_SSL` class might be needed instead (requires code adjustment).
+*   **Security**: **NEVER** commit your `.env` file to version control (Git). Ensure `.env` is in your `.gitignore` file.
+*   **App Passwords**: Using App Passwords is highly recommended for security if your provider supports them (like Gmail).
+*   **SMTP Settings**: Double-check `MAILER_HOST` and `MAILER_PORT` for your email provider. Port 587 typically uses STARTTLS (which the code handles). Port 465 usually requires `smtplib.SMTP_SSL` (would need a minor code adjustment in `app.py`).
+*   **Flask Secret Key**: **MUST** be changed to a unique, random, secret value for production deployments.
 
 ## 🚀 How to Use
 
-1.  **Start the Flask Application**:
+1.  **Start the Flask Development Server**:
     ```bash
+    # Ensure you are in the project directory and your virtualenv is active
     python app.py
     ```
-    The application will start, usually on `http://127.0.0.1:5000/` or `http://0.0.0.0:5000/` (accessible on your local network). Open the URL in your web browser.
+    The application will typically start on `http://127.0.0.1:5000/`. Open this URL in your web browser. (See "Running for Production" for deployment).
 
 2.  **Choose Content Source**:
-    *   Select "Draft Email Below" to use the editor.
-    *   Select "Upload Template File" to browse for an `.html`, `.md`, or `.txt` file.
+    *   Select "Draft Below" to use the editor.
+    *   Select "Upload Template" to browse for an `.html`, `.md`, or `.txt` file.
 
 3.  **Create/Upload Email Content**:
     *   **If Drafting**: Use the Rich Text Editor or switch to the "HTML Source" tab.
-    *   **If Uploading**: Select your template file.
+    *   **If Uploading**: Click "Choose File", select your template file. The filename will appear.
 
 4.  **Set Subject & Sender Name**:
-    *   Enter the **Email Subject**. You can use placeholders here (e.g., `Welcome, $name!`). See **"How the Subject is Determined"** below.
+    *   Enter the **Email Subject**. You can use placeholders (e.g., `Welcome, $name!`). See **"How the Subject is Determined"** below.
     *   Optionally, enter a **Sender Display Name** to override the default from `.env`.
 
 5.  **Choose Recipient Method**:
@@ -157,22 +168,24 @@ FLASK_SECRET_KEY="a_default_but_less_secure_key_please_change_me"
     *   Select "Single Recipient".
 
 6.  **Provide Recipients**:
-    *   **If Bulk**: Upload your `.csv` file. See **"Example CSV File"** below.
+    *   **If Bulk**: Click "Choose File" under "Upload CSV File", select your `.csv` file. The filename will appear. See **"Example CSV File"** below.
     *   **If Single**: Enter the recipient's email address in the input field.
 
 7.  **Add Attachments (Optional)**:
-    *   Click "Choose Files" and select one or more files to attach.
+    *   Click "Choose Files" under "Attachments" and select one or more files. The selected filename(s) or count will appear.
 
 8.  **Preview (Recommended)**:
-    *   Click the "Preview" button to see how the email body will look. Check formatting, especially if using Markdown or complex HTML. (Placeholders are not replaced in the preview).
+    *   Click the "Preview" button.
+    *   Use the **"Desktop"** and **"Mobile"** tabs within the preview panel to visualize the email on different screen sizes.
+    *   Check formatting, especially if using Markdown or complex HTML. *(Remember: Placeholders like `$name` are not replaced in the preview).*
 
 9.  **Send**:
-    *   Click the "Send Email(s)" button. A loading indicator will appear.
+    *   Click the "Send Email(s)" button. A loading indicator will appear while processing.
 
 10. **Review Results**:
     *   You'll be redirected to the results page.
-    *   Check the summary status in the flash message and the navbar.
-    *   Review the detailed log for the status of each individual email (Success, Failed, Skipped). Error messages will be shown for failures.
+    *   Check the summary status message at the top and in the navbar.
+    *   Review the detailed log for the status of each individual email (Success, Failed, Skipped, Warning). Error messages will be shown for failures.
 
 11. **Go Back**: Click "Go Back & Send More" to return to the main form.
 
@@ -234,9 +247,22 @@ You can personalize both the **Subject** and the **Email Body** using data from 
 The application follows this logic to set the subject line for each email:
 
 1.  **User Input Field**: If you type anything into the "Email Subject" field on the form, that text is used as the template. Placeholders (like `$FirstName`) within this input *will* be processed using the CSV data for each recipient.
+    *   **Example**: If you enter `Hello $FirstName!`, and the CSV has `FirstName` as `Alice`, the subject for Alice will be `Hello Alice!`.
 2.  **`<title>` Tag (HTML Upload/Draft)**: If the "Email Subject" field is **left empty** AND the email content is determined to be HTML (either uploaded `.html`/`.htm` or drafted HTML), the application looks for a `<title>Your Subject Here</title>` tag within the HTML content. If found, the text inside the title tag is used as the subject. Placeholders are *not* processed if the subject is extracted this way.
+    *   **Example**: If the HTML content has `<title>Welcome to Our Service</title>`, the subject will be `Welcome to Our Service`.
+    *   **Note**: If the HTML content is empty or starts with HTML tags (like `<html>`), the application will not find a title tag and will skip this step.
+    *   **Note**: If the content is Markdown or plain text, this step is skipped entirely.
+    *   **Note**: If the content is HTML but does not contain a `<title>` tag, this step is skipped entirely.
+
 3.  **First Non-Empty Line (Markdown/Text Upload or Fallback)**: If the subject field is empty AND no `<title>` tag is found (or the content is Markdown/Text), the application attempts to use the first non-empty, non-HTML-tag-like line from the email content as the subject. Placeholders are *not* processed if the subject is extracted this way.
+
+    *   **Example**: If the content starts with `# Welcome to Our Service`, the subject will be `Welcome to Our Service`.
+    *   **Note**: If the content is empty or starts with HTML tags (like `<html>`), this step is skipped entirely. 
+
+
 4.  **Default Subject**: If none of the above methods yield a subject (e.g., the content starts immediately with HTML tags and has no title, and the subject field was empty), a generic default subject like `"Your Default Sender Name Information"` (using the `display_name` from `.env` or the custom one) will be used.
+    *   **Example**: If the content is `<html><body>...</body></html>` and the subject field is empty, the subject will be `Your Default Sender Name Information`.
+    *   **Note**: This is a fallback and should not be relied upon for meaningful subject lines.
 
 **Recommendation**: For maximum control and personalization, **always specify your desired subject in the "Email Subject" form field**, using placeholders as needed.
 
@@ -246,6 +272,7 @@ The application follows this logic to set the subject line for each email:
 web-bulk-email-sender/
 ├── .env                 # Your SMTP config & secrets (!!! NOT COMMITTED !!!)
 ├── .env.example         # Example environment file structure
+├── .gitignore           # Specifies intentionally untracked files that Git should ignore
 ├── app.py               # Main Flask application logic (routing, email sending)
 ├── requirements.txt     # Python package dependencies
 ├── readme.md            # This file
@@ -254,64 +281,81 @@ web-bulk-email-sender/
     └── result.html      # Status/result log page
 ```
 
-## 🏃 Running the App
+## 🏃 Running the App for Development
 
 ```bash
 # Ensure you are in the project directory and your virtualenv is active
 python app.py
 ```
 
-By default, it runs on `http://127.0.0.1:5000`. The `host='0.0.0.0'` setting in `app.py` makes it accessible from other devices on your local network using your computer's local IP address (e.g., `http://192.168.1.100:5000`).
+This uses the Flask development server, which is great for testing but **NOT suitable for production**. It runs by default on `http://127.0.0.1:5000`.
+Open this URL in your web browser to access the application.
+*(Note: The development server is not designed for high traffic or production use. For production, see the "Running for Production" section below.)*
+
+## 🚀 Running for Production
+
+Deploying a Flask application requires a more robust setup than the development server. Here's a recommended approach:
+
+1.  **Use a Production WSGI Server:** Instead of `python app.py`, use a server like **Gunicorn** (popular on Linux/macOS) or **Waitress** (cross-platform).
+    *   Install Gunicorn: `pip install gunicorn` (add to `requirements.txt`)
+    *   Run with Gunicorn: `gunicorn --workers 3 --bind 0.0.0.0:5000 app:app` (Adjust workers and bind as needed).
+
+2.  **Disable Debug Mode:** In `app.py`, ensure the `app.run()` call (if used at all) has `debug=False`. The WSGI server will typically bypass this, but it's a crucial setting.
+
+3.  **Set a Strong `FLASK_SECRET_KEY`:** Generate a secure random key and set it in your `.env` file or as a system environment variable. **Do not use the default key.**
+
+4.  **Manage Environment Variables Securely:** Do *not* commit your `.env` file. Either securely copy it to your production server (outside the web root if possible) or, better yet, set the required variables (`sender_email`, `password`, `FLASK_SECRET_KEY`, etc.) as actual environment variables on the server.
+
+5.  **(Highly Recommended) Use a Reverse Proxy:** Set up **Nginx** or **Apache** in front of your WSGI server (Gunicorn/Waitress).
+    *   The reverse proxy handles incoming internet traffic (ports 80/443).
+    *   It forwards requests to your WSGI server (e.g., running on `127.0.0.1:5000`).
+    *   It efficiently serves static files.
+    *   It handles **HTTPS (SSL/TLS termination)** - Use Let's Encrypt for free certificates.
+    *   It can provide load balancing, security headers, and rate limiting.
+
+6.  **Run as a Service:** Configure your WSGI server (Gunicorn) to run as a background service using `systemd` (on Linux) or a similar process manager to ensure it restarts automatically.
+
+7.  **Configure Logging:** Set up proper file or external logging for Flask and your WSGI server for monitoring and debugging production issues.
+
+**Conceptual Production Flow:**
+`User <--HTTPS--> Nginx/Apache <--HTTP--> Gunicorn/Waitress <--> Flask App`
 
 ## 🤝 Contributing & Future Development
 
-We welcome contributions from the community! Whether it's fixing a bug, improving documentation, adding a new feature, or suggesting an idea, your help is appreciated.
+Contributions are welcome! Please feel free to fork the repository, make changes, and submit a Pull Request. Discussing significant changes in an Issue first is recommended.
 
 ### How to Contribute
 
-1.  **Find an Issue or Feature**: Look through the existing [GitHub Issues](https://github.com/SupratimRK/web-bulk-email-sender/issues) or propose a new idea. Discussing your plan in an issue first is often a good idea.
-2.  **Fork the Repository**: Create your own copy of the project on GitHub ([https://github.com/SupratimRK/web-bulk-email-sender](https://github.com/SupratimRK/web-bulk-email-sender)).
-3.  **Create a Branch**: Make a new branch in your fork for your changes:
-    ```bash
-    git checkout -b feature/your-awesome-feature  # Or fix/address-specific-bug
-    ```
-4.  **Develop & Test**: Make your code changes. Add tests if applicable. Ensure the application runs correctly and your changes integrate well. Follow existing code style.
-5.  **Commit Your Changes**: Use clear and descriptive commit messages:
-    ```bash
-    git commit -m "feat: Add template saving functionality" -m "Implemented feature X, allowing users to save drafts..."
-    ```
-6.  **Push to Your Fork**:
-    ```bash
-    git push origin feature/your-awesome-feature
-    ```
-7.  **Open a Pull Request (PR)**: Go to the original repository ([https://github.com/SupratimRK/web-bulk-email-sender](https://github.com/SupratimRK/web-bulk-email-sender)) and open a PR from your branch to the `main` branch.
-8.  **Describe Your PR**: Clearly explain the purpose of your changes, what issue it fixes (e.g., `Closes #123`), and any specific testing instructions.
+1.  **Find/Discuss**: Look through [GitHub Issues](https://github.com/SupratimRK/web-bulk-email-sender/issues) or propose an idea.
+2.  **Fork**: Create your own copy.
+3.  **Branch**: `git checkout -b feature/your-cool-feature`
+4.  **Develop & Test**: Make changes, follow style, ensure it works.
+5.  **Commit**: Use clear messages (`git commit -m "feat: Describe feature"`).
+6.  **Push**: `git push origin feature/your-cool-feature`
+7.  **Pull Request**: Open a PR to the `main` branch of the original repo. Describe your changes clearly.
 
 ### 💡 Potential Future Ideas & Roadmap
 
-This project has room to grow! Here are some ideas that contributors could tackle:
-
-*   **📨 Template Management**: Allow users to save, load, and manage email templates directly within the UI.
-*   **🚦 Rate Limiting Control**: Add UI options to configure delays between sending emails to respect SMTP server limits.
-*   **✅ Enhanced CSV Validation/Preview**: Show a preview of parsed CSV data before sending, highlighting potential issues or the identified 'email' column.
-*   **🐳 Dockerization**: Create `Dockerfile` and `docker-compose.yml` for easier setup and deployment.
-*   **🎨 UI Themes/Customization**: Add options for different visual themes or allow minor UI tweaks.
-*   **👥 Simple Contact List Management**: Beyond single CSV uploads, potentially add basic list storage/management.
-
-If you're interested in working on any of these, please open an issue on the [GitHub repository](https://github.com/SupratimRK/web-bulk-email-sender/issues) to discuss the approach first!
+*   **📨 Template Management**: Save/load/manage email templates in the UI.
+*   **🚦 Rate Limiting Control**: UI options for delays between sends.
+*   **✅ Enhanced CSV Validation/Preview**: Preview parsed CSV data before sending.
+*   **🐳 Dockerization**: `Dockerfile` and `docker-compose.yml` for easier deployment.
+*   **🎨 UI Themes/Customization**: Options for visual themes.
+*   **👥 Simple Contact List Management**: Basic list storage/management.
+*   **🧪 Unit/Integration Tests**: Improve code quality and reliability.
 
 ## 🙏 Credits & Acknowledgements
 
 *   **Original Concept Inspiration**: [aahnik/bulk-email-sender](https://github.com/aahnik/bulk-email-sender)
 *   **Framework**: [Flask](https://flask.palletsprojects.com/)
-*   **Frontend Styling**: [Bootstrap](https://getbootstrap.com/), [Bootstrap Icons](https://icons.getbootstrap.com/)
+*   **Frontend Styling**: [Tailwind CSS](https://tailwindcss.com/)
 *   **Rich Text Editor**: [Quill.js](https://quilljs.com/)
 *   **Markdown Rendering**: [Marked.js](https://marked.js.org/), [Python-Markdown](https://python-markdown.github.io/)
 *   **HTML to Text**: [html2text](https://github.com/Alir3z4/html2text)
 
 ## 📄 License
 
-This project is licensed under the **MIT License**. See the LICENSE file (if included) or the standard MIT License text for details. Feel free to use, modify, and distribute it as you see fit, but please provide attribution.
+This project is licensed under the **MIT License**. Feel free to use, modify, and distribute it, but please provide attribution.
 
 ---
 
