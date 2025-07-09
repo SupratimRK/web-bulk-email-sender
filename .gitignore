@@ -1,1 +1,191 @@
+# Environment variables and secrets
 .env
+.env.local
+.env.production
+.env.staging
+.env.development
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+cover/
+
+# Virtual environments
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+.venv/
+
+# IDEs and editors
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Email-related temporary files
+*.csv.tmp
+*.html.tmp
+temp_uploads/
+email_templates_temp/
+
+# Flask instance folder
+instance/
+
+# Database files (if you add a database later)
+*.db
+*.sqlite
+*.sqlite3
+
+# Backup files
+*.bak
+*.backup
+*.orig
+
+# OS-specific files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints
+
+# pyenv
+.python-version
+
+# pipenv
+Pipfile.lock
+
+# Poetry
+poetry.lock
+
+# Celery
+celerybeat-schedule
+celerybeat.pid
+
+# SageMath parsed files
+*.sage.py
+
+# Spyder project settings
+.spyderproject
+.spyproject
+
+# Rope project settings
+.ropeproject
+
+# mkdocs documentation
+/site
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre type checker
+.pyre/
+
+# pytype static type analyzer
+.pytype/
+
+# Cython debug symbols
+cython_debug/
+
+# PyCharm
+.idea/
+
+# Local development files
+local_config.py
+config_local.py
+
+# Email testing files
+test_emails/
+email_previews/
+sent_emails_backup/
+
+# Temporary upload files
+uploads/
+temp/
+tmp/
+
+# Node modules (if you add any frontend build tools)
+node_modules/
+
+# Compiled CSS/JS (if you add build tools)
+static/dist/
+static/build/
+
+# Mac-specific
+.AppleDouble
+.LSOverride
+
+# Windows-specific
+desktop.ini
+$RECYCLE.BIN/
+
+# Linux-specific
+*~
+
+# Render-specific (deployment artifacts)
+.render/
+
+# Email provider credentials backup
+*_credentials.json
+*_config.json
+smtp_test.py
+
+# Development database exports
+*.sql
+*.dump

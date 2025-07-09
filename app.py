@@ -2,9 +2,11 @@ import os
 import re
 import csv
 import io
+import time
 import smtplib
 import markdown
 import html2text
+import atexit
 from dotenv import load_dotenv
 from flask import Flask, render_template, request, redirect, url_for, flash
 from email.mime.text import MIMEText
@@ -12,6 +14,15 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.base import MIMEBase
 from email import encoders
 from werkzeug.utils import secure_filename
+
+# Import keep-alive service
+try:
+    from keep_alive import start_keep_alive, stop_keep_alive
+    KEEP_ALIVE_AVAILABLE = True
+except ImportError:
+    KEEP_ALIVE_AVAILABLE = False
+    def start_keep_alive(): pass
+    def stop_keep_alive(): pass
 
 # Load environment variables from .env
 load_dotenv()
@@ -31,6 +42,13 @@ if not SENDER_EMAIL or not PASSWORD:
 
 app = Flask(__name__)
 app.secret_key = os.getenv('FLASK_SECRET_KEY', "a_default_but_less_secure_key")
+
+# Register cleanup function
+atexit.register(stop_keep_alive)
+
+# Start keep-alive service if in production
+if os.getenv('FLASK_ENV') == 'production':
+    start_keep_alive()
 
 ALLOWED_EXTENSIONS_TEMPLATE = {'html', 'htm', 'md', 'txt'} # Added htm
 ALLOWED_EXTENSIONS_CSV = {'csv'}
@@ -208,6 +226,16 @@ def send_email(receiver, subject, html_message, attachments, display_name):
         return False, error_msg
 
 
+@app.route("/health", methods=["GET"])
+def health_check():
+    """Health check endpoint for monitoring"""
+    return {
+        "status": "healthy",
+        "timestamp": int(time.time()),
+        "version": "1.0.0",
+        "keep_alive": KEEP_ALIVE_AVAILABLE
+    }
+
 @app.route("/", methods=["GET", "POST"])
 def index():
     if request.method == "POST":
@@ -265,11 +293,21 @@ def index():
         user_subject_template = request.form.get("subject", "").strip()
         custom_display_name = request.form.get("custom_display_name", "").strip()
         final_display_name = custom_display_name if custom_display_name else DEFAULT_DISPLAY_NAME
+        
+        # --- 3. Get Email Delay (for bulk sending) ---
+        email_delay = 0.0
+        try:
+            email_delay_str = request.form.get("email_delay", "1").strip()
+            email_delay = float(email_delay_str) if email_delay_str else 1.0
+            # Clamp delay between 0 and 300 seconds
+            email_delay = max(0.0, min(300.0, email_delay))
+        except (ValueError, TypeError):
+            email_delay = 1.0  # Default fallback
 
-        # --- 3. Get Attachments ---
+        # --- 4. Get Attachments ---
         attachments = request.files.getlist("attachments")
 
-        # --- 4. Prepare Sending List and Parameters ---
+        # --- 5. Prepare Sending List and Parameters ---
         send_method = request.form.get("send_method")
         log_messages = []
         sent_count = 0
@@ -370,7 +408,7 @@ def index():
         # Configure Markdown parser
         md = markdown.Markdown(extensions=['extra', 'nl2br', 'smarty']) # Added smarty for quotes etc.
 
-        for recipient_info in recipients_data:
+        for i, recipient_info in enumerate(recipients_data):
             receiver = recipient_info['email']
             row_data = recipient_info['data']
 
@@ -415,6 +453,11 @@ def index():
 
             # Reset markdown parser state for next email, crucial if using extensions with state
             md.reset()
+            
+            # Apply delay between emails for bulk sending (but not after the last email)
+            if send_method == "bulk" and email_delay > 0 and i < len(recipients_data) - 1:
+                time.sleep(email_delay)
+                log_messages.append(f"INFO: Waiting {email_delay} second(s) before next email...")
 
         # --- 6. Report Results ---
         final_status = "info" # Default status
@@ -456,6 +499,8 @@ def index():
     return render_template("index.html") # No need to pass navbar status here, JS handles it
 
 if __name__ == "__main__":
-    # Use host='0.0.0.0' to make it accessible on your network
+    # Get port from environment variable for Render deployment
+    port = int(os.getenv('PORT', 5000))
     # Use debug=False in production
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    debug_mode = os.getenv('FLASK_ENV', 'development') == 'development'
+    app.run(host='0.0.0.0', port=port, debug=debug_mode)

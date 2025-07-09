@@ -379,6 +379,14 @@
                   class="text-xs text-gray-500 mt-1 block hidden"></span>
                 <p class="mt-1 text-xs text-gray-500">Must include an 'EMAIL' header (case-insensitive).</p>
               </div>
+              <div id="delayDiv" class="md:col-span-2"><label for="email_delay"
+                  class="block text-sm font-medium text-gray-700 mb-1">Delay Between Emails (seconds)</label><input type="number"
+                  name="email_delay" id="email_delay" min="0" max="300" step="0.5" value="1"
+                  class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                  placeholder="1"><span id="delay-display" class="text-xs text-gray-500 mt-1 block">
+                  Current delay: <span id="delay-value">1</span> second(s)</span>
+                <p class="mt-1 text-xs text-gray-500">Recommended: 1-5 seconds to avoid rate limiting. Max: 300 seconds (5 minutes).</p>
+              </div>
               <div id="manualDiv" class="hidden md:col-span-2"><label for="manual_email"
                   class="block text-sm font-medium text-gray-700">Recipient Email Address</label><input type="email"
                   name="manual_email" id="manual_email"
@@ -697,14 +705,15 @@
     mobilePreviewTabButton?.addEventListener('click', () => switchPreviewTab('mobile')); // Optional chaining
 
     // --- UI Toggles (Sections) ---
-    const bulkRadio = document.getElementById("bulk"); const manualRadio = document.getElementById("manual"); const csvDiv = document.getElementById("csvDiv"); const manualDiv = document.getElementById("manualDiv"); const csvInput = document.getElementById("csv_file"); const manualInput = document.getElementById("manual_email");
+    const bulkRadio = document.getElementById("bulk"); const manualRadio = document.getElementById("manual"); const csvDiv = document.getElementById("csvDiv"); const manualDiv = document.getElementById("manualDiv"); const csvInput = document.getElementById("csv_file"); const manualInput = document.getElementById("manual_email"); const delayDiv = document.getElementById("delayDiv");
     const sourceUploadRadio = document.getElementById("sourceUpload"); const sourceDraftRadio = document.getElementById("sourceDraft"); const uploadSection = document.getElementById("uploadSection"); const draftSection = document.getElementById("draftSection"); const templateInput = document.getElementById("template_file");
 
     const toggleSendMethod = () => {
-      if (!manualRadio || !csvDiv || !manualDiv || !manualInput || !csvInput) return; // Guard
+      if (!manualRadio || !csvDiv || !manualDiv || !manualInput || !csvInput || !delayDiv) return; // Guard
       const isManual = manualRadio.checked;
       manualDiv.classList.toggle('hidden', !isManual);
       csvDiv.classList.toggle('hidden', isManual);
+      delayDiv.classList.toggle('hidden', isManual); // Hide delay for manual sending
       manualInput.required = isManual;
       csvInput.required = !isManual;
     };
@@ -747,6 +756,19 @@
       });
     }
 
+    // --- Delay input handler ---
+    const emailDelayInput = document.getElementById("email_delay");
+    const delayValueSpan = document.getElementById("delay-value");
+    
+    const updateDelayDisplay = () => {
+      if (emailDelayInput && delayValueSpan) {
+        const value = parseFloat(emailDelayInput.value) || 0;
+        delayValueSpan.textContent = value;
+      }
+    };
+    
+    emailDelayInput?.addEventListener('input', updateDelayDisplay);
+
     // Initial setup on page load
     document.addEventListener("DOMContentLoaded", () => {
       // Essential elements check
@@ -766,6 +788,9 @@
       displayFilename('template_file', 'template-filename-display');
       displayFilename('csv_file', 'csv-filename-display');
       displayFilename('attachments', 'attachments-filename-display');
+      
+      // Initialize delay display
+      updateDelayDisplay();
 
       console.log("DOM fully loaded and initial setup complete.");
     });
