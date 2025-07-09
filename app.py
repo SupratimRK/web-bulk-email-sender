@@ -339,6 +339,10 @@ def index():
             email_delay = max(0.0, min(300.0, email_delay))
         except (ValueError, TypeError):
             email_delay = 1.0  # Default fallback
+        
+        # Production timeout management - reduce delays for large batches
+        is_production = os.getenv('FLASK_ENV') == 'production'
+        max_processing_time = 240  # 4 minutes safety margin for 5-minute timeout
 
         # --- 4. Get Attachments ---
         attachments = request.files.getlist("attachments")
@@ -443,6 +447,9 @@ def index():
 
         # Configure Markdown parser
         md = markdown.Markdown(extensions=['extra', 'nl2br', 'smarty']) # Added smarty for quotes etc.
+        
+        # Track processing start time for timeout management
+        start_time = time.time()
 
         for i, recipient_info in enumerate(recipients_data):
             receiver = recipient_info['email']
@@ -492,8 +499,24 @@ def index():
             
             # Apply delay between emails for bulk sending (but not after the last email)
             if send_method == "bulk" and email_delay > 0 and i < len(recipients_data) - 1:
-                time.sleep(email_delay)
-                log_messages.append(f"INFO: Waiting {email_delay} second(s) before next email...")
+                # Smart delay management for production to prevent timeouts
+                if is_production:
+                    # Calculate elapsed time and estimate remaining time
+                    elapsed_time = time.time() - start_time
+                    remaining_emails = len(recipients_data) - i - 1
+                    estimated_time_remaining = remaining_emails * (email_delay + 5)  # 5s avg per email
+                    
+                    # Reduce delay if we're approaching timeout
+                    if elapsed_time + estimated_time_remaining > max_processing_time:
+                        adjusted_delay = max(0.5, email_delay * 0.5)  # Reduce by 50%, min 0.5s
+                        time.sleep(adjusted_delay)
+                        log_messages.append(f"INFO: Adjusted delay to {adjusted_delay}s to prevent timeout (elapsed: {elapsed_time:.1f}s)...")
+                    else:
+                        time.sleep(email_delay)
+                        log_messages.append(f"INFO: Waiting {email_delay} second(s) before next email...")
+                else:
+                    time.sleep(email_delay)
+                    log_messages.append(f"INFO: Waiting {email_delay} second(s) before next email...")
 
         # --- 6. Report Results ---
         final_status = "info" # Default status
