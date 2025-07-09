@@ -41,13 +41,14 @@ git push -u origin main
 In your Render service settings, add these environment variables:
 
 ### Required Variables:
-- `SENDER_EMAIL`: Your email address
+- `SENDER_EMAIL`: Your email address (used for SMTP login/authentication)
 - `PASSWORD`: Your email app password
 - `FLASK_SECRET_KEY`: A random secret key for Flask sessions
 
 ### Optional Variables:
 - `display_name`: Your sender display name
-- `MAILER_HOST`: SMTP host (default: smtp.mailersend.net)
+- `from_email`: Email address shown in 'From' header (defaults to sender_email)
+- `MAILER_HOST`: SMTP host (default: smtp.gmail.com)
 - `MAILER_PORT`: SMTP port (default: 587)
 - `FLASK_ENV`: Set to "production"
 
@@ -77,8 +78,9 @@ The app includes an automatic keep-alive service that:
    - Go to Google Account settings
    - Security → 2-Step Verification → App passwords
    - Generate password for "Mail"
-3. Use your Gmail address for `SENDER_EMAIL`
+3. Use your Gmail address for `SENDER_EMAIL` (login email)
 4. Use the app password for `PASSWORD`
+5. Optionally set `from_email` if you want a different display email
 
 ### For Other Providers:
 - **MailerSend**: Default configuration works

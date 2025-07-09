@@ -27,7 +27,8 @@ except ImportError:
 # Load environment variables from .env
 load_dotenv()
 DEFAULT_DISPLAY_NAME = os.getenv('display_name', 'Default Sender Name')
-SENDER_EMAIL = os.getenv('sender_email')
+SENDER_EMAIL = os.getenv('sender_email')  # Used for SMTP authentication/login
+FROM_EMAIL = os.getenv('from_email', os.getenv('sender_email'))  # Used in From header, fallback to sender_email
 PASSWORD = os.getenv('password')
 
 # Load SMTP configuration
@@ -37,8 +38,18 @@ MAILER_PORT = int(os.getenv('MAILER_PORT', "587"))
 # Basic validation for required env vars
 if not SENDER_EMAIL or not PASSWORD:
     print("Error: SENDER_EMAIL and PASSWORD must be set in the .env file.")
+    print("SENDER_EMAIL is used for SMTP login authentication.")
     # Consider exiting or handling this more gracefully depending on deployment
     # exit(1)
+
+if not FROM_EMAIL:
+    print("Warning: FROM_EMAIL not set, using SENDER_EMAIL for From header.")
+    FROM_EMAIL = SENDER_EMAIL
+
+# Validate FROM_EMAIL (should have a valid fallback)
+if not FROM_EMAIL:
+    print("Warning: FROM_EMAIL not set, using SENDER_EMAIL as fallback.")
+    FROM_EMAIL = SENDER_EMAIL
 
 app = Flask(__name__)
 app.secret_key = os.getenv('FLASK_SECRET_KEY', "a_default_but_less_secure_key")
@@ -147,8 +158,8 @@ def send_email(receiver, subject, html_message, attachments, display_name):
 
     multipart_msg = MIMEMultipart("alternative")
     multipart_msg["Subject"] = subject
-    # Use the passed 'display_name' and format the From header correctly
-    multipart_msg["From"] = f"{display_name} <{SENDER_EMAIL}>"
+    # Use the passed 'display_name' and FROM_EMAIL for the From header
+    multipart_msg["From"] = f"{display_name} <{FROM_EMAIL}>"
     multipart_msg["To"] = receiver
 
     # Generate plain text version
