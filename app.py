@@ -158,8 +158,19 @@ def send_email(receiver, subject, html_message, attachments, display_name):
 
     multipart_msg = MIMEMultipart("alternative")
     multipart_msg["Subject"] = subject
-    # Use the passed 'display_name' and FROM_EMAIL for the From header
-    multipart_msg["From"] = f"{display_name} <{FROM_EMAIL}>"
+    
+    # Gmail SMTP requires the From header to match the authenticated sender
+    # to avoid "Sender domain is not valid" errors
+    if MAILER_HOST and "gmail.com" in MAILER_HOST.lower():
+        # For Gmail, use the authenticated sender email
+        multipart_msg["From"] = f"{display_name} <{SENDER_EMAIL}>"
+        # Set Reply-To to the desired from_email if different
+        if FROM_EMAIL != SENDER_EMAIL:
+            multipart_msg["Reply-To"] = f"{display_name} <{FROM_EMAIL}>"
+    else:
+        # For other SMTP servers, use the from_email
+        multipart_msg["From"] = f"{display_name} <{FROM_EMAIL}>"
+    
     multipart_msg["To"] = receiver
 
     # Generate plain text version
@@ -212,10 +223,24 @@ def send_email(receiver, subject, html_message, attachments, display_name):
                 server.starttls()
                 server.ehlo() # Re-identify after starting TLS
             server.login(user=SENDER_EMAIL, password=PASSWORD)
-            server.sendmail(SENDER_EMAIL, receiver, multipart_msg.as_string())
+            
+            # Use FROM_EMAIL as envelope sender for SMTP providers that support domain delegation
+            # For direct Gmail SMTP, this would need to match SENDER_EMAIL
+            # For services like SendPulse, they can handle domain delegation
+            envelope_sender = FROM_EMAIL if FROM_EMAIL else SENDER_EMAIL
+            server.sendmail(envelope_sender, receiver, multipart_msg.as_string())
+            
         return True, f"Email successfully sent to {receiver}"
     except smtplib.SMTPAuthenticationError as e:
         error_msg = f"SMTP Authentication Error: {e}. Check SENDER_EMAIL and PASSWORD in .env."
+        print(error_msg)
+        return False, error_msg
+    except smtplib.SMTPRecipientsRefused as e:
+        error_msg = f"SMTP Recipients Refused for {receiver}: {e}"
+        print(error_msg)
+        return False, error_msg
+    except smtplib.SMTPSenderRefused as e:
+        error_msg = f"SMTP Sender Refused for {receiver}: {e}. Gmail may require the From address to match the authenticated sender."
         print(error_msg)
         return False, error_msg
     except smtplib.SMTPServerDisconnected:

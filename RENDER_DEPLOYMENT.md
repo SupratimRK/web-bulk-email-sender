@@ -82,6 +82,57 @@ The app includes an automatic keep-alive service that:
 4. Use the app password for `PASSWORD`
 5. Optionally set `from_email` if you want a different display email
 
+### For Other SMTP Providers:
+
+#### SendPulse with Domain Delegation:
+**When you want to authenticate with Gmail but send from a custom domain:**
+
+1. **Setup in SendPulse:**
+   - Connect your Gmail account to SendPulse
+   - Verify your custom domain (e.g., `toolhub.live`)
+   - Enable domain delegation from Gmail to your custom domain
+
+2. **Configuration:**
+   ```bash
+   sender_email=your_gmail@gmail.com      # For SMTP authentication
+   from_email=support@yourdomain.com      # Your verified custom domain
+   password=your_gmail_app_password       # Gmail app password
+   MAILER_HOST=smtp-pulse.com
+   MAILER_PORT=587
+   ```
+
+3. **How it works:**
+   - SendPulse authenticates using your Gmail credentials
+   - Emails appear to come from your custom domain
+   - Domain delegation allows this mixed setup
+
+#### SMTP-Pulse / Custom SMTP:
+1. Use your verified domain email (e.g., `support@toolhub.live`)
+2. Set SMTP server details:
+   ```
+   MAILER_HOST=smtp-pulse.com
+   MAILER_PORT=587 (or 2525, 465)
+   ```
+3. Use the credentials provided by your SMTP service
+4. Ensure your domain is verified with the SMTP provider
+
+#### MailerSend:
+1. Verify your domain in MailerSend dashboard
+2. Use default settings:
+   ```
+   MAILER_HOST=smtp.mailersend.net
+   MAILER_PORT=587
+   ```
+3. Use domain-based email address
+
+#### SendGrid:
+1. Use SendGrid SMTP settings:
+   ```
+   MAILER_HOST=smtp.sendgrid.net
+   MAILER_PORT=587
+   ```
+2. Use API key as password
+
 ### For Other Providers:
 - **MailerSend**: Default configuration works
 - **SendGrid**: Use their SMTP settings
@@ -108,7 +159,28 @@ The app includes an automatic keep-alive service that:
    - Check SMTP settings
    - Review firewall/security settings
 
-3. **Build fails**:
+3. **"Sender domain is not valid" error**:
+   - **Problem**: SMTP provider doesn't recognize the sender domain
+   - **For SendPulse + Custom Domain**:
+     - Ensure your custom domain is verified in SendPulse dashboard
+     - Check that domain delegation is properly configured
+     - Verify Gmail account is connected to SendPulse
+   - **For Direct Gmail SMTP**: Use matching Gmail addresses for both auth and sending
+   - **Fix**: Verify domain setup with your SMTP provider
+
+4. **SMTP Provider Domain Mismatch**:
+   - Each SMTP provider validates sender domains
+   - Gmail SMTP: Use `@gmail.com` addresses
+   - Custom SMTP: Use your verified domain addresses
+   - MailerSend: Use verified domains from your account
+
+5. **Gmail authentication issues**:
+   - Generate a new App Password
+   - Ensure 2FA is enabled on your Google account
+   - Use the 16-character app password (no spaces)
+   - Don't use your regular Gmail password
+
+5. **Build fails**:
    - Check requirements.txt syntax
    - Verify Python version compatibility
 
