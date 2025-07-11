@@ -5,7 +5,7 @@ import io
 import time
 import markdown
 from dotenv import load_dotenv
-from flask import Flask, render_template, request, redirect, url_for, flash
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
 from werkzeug.utils import secure_filename
 import requests
 import base64
@@ -532,6 +532,63 @@ def index():
 
     # For GET request
     return render_template("index.html") # No need to pass navbar status here, JS handles it
+
+@app.route("/send_test_email", methods=["POST"])
+def send_test_email():
+    log_messages = []
+    try:
+        email_content_raw = request.json.get("email_content")
+        user_subject_template = request.json.get("subject", "").strip()
+        custom_display_name = request.json.get("custom_display_name", "").strip()
+        test_recipient_email = request.json.get("test_recipient_email", "").strip()
+        is_markdown = request.json.get("is_markdown", False)
+        is_plain_text = request.json.get("is_plain_text", False)
+
+        if not test_recipient_email or '@' not in test_recipient_email:
+            return jsonify({"status": "error", "message": "Please provide a valid test recipient email address."}), 400
+        if not email_content_raw or not email_content_raw.strip():
+            return jsonify({"status": "error", "message": "Email content cannot be empty."}), 400
+
+        final_display_name = custom_display_name if custom_display_name else DEFAULT_DISPLAY_NAME
+
+        # Configure Markdown parser
+        md = markdown.Markdown(extensions=['extra', 'nl2br', 'smarty'])
+
+        personalized_content = email_content_raw # No CSV data for test email
+
+        # Determine Subject
+        subject_line = user_subject_template
+        body_to_process = personalized_content
+        if not user_subject_template:
+            subject_line, body_to_process = extract_subject_and_body(personalized_content)
+            if subject_line == "No Subject":
+                subject_line = f"{final_display_name} Test Email" # Specific default for test
+
+        # Convert body to HTML if necessary
+        try:
+            if is_markdown:
+                final_html_body = md.convert(body_to_process)
+            elif is_plain_text:
+                final_html_body = f"<pre style='font-family: sans-serif; white-space: pre-wrap;'>{body_to_process}</pre>"
+            else:
+                final_html_body = body_to_process
+        except Exception as e:
+            md.reset()
+            return jsonify({"status": "error", "message": f"Error preparing content: {e}"}), 500
+
+        # Send the email (no attachments for test email)
+        success, message = send_email(test_recipient_email, subject_line, final_html_body, [], final_display_name)
+
+        md.reset() # Reset parser state
+
+        if success:
+            return jsonify({"status": "success", "message": message}), 200
+        else:
+            return jsonify({"status": "error", "message": message}), 500
+
+    except Exception as e:
+        print(f"Error in send_test_email: {e}")
+        return jsonify({"status": "error", "message": f"An unexpected error occurred: {e}"}), 500
 
 if __name__ == "__main__":
     # Get port from environment variable for Render deployment

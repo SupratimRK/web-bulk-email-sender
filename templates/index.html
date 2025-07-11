@@ -399,21 +399,33 @@
                   multiple><span id="attachments-filename-display"
                   class="text-xs text-gray-500 mt-1 block hidden"></span></div>
             </div>
-            <footer class="px-6 py-4 bg-gray-50 border-t border-gray-200 flex justify-between items-center"><button
-                type="button" id="preview-btn"
-                class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-150 ease-in-out"><svg
-                  xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+            <footer class="px-6 py-4 bg-gray-50 border-t border-gray-200 flex justify-between items-center">
+              <button type="button" id="preview-btn"
+                class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-150 ease-in-out">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
                   stroke="currentColor" class="w-5 h-5 mr-2 text-gray-400">
                   <path stroke-linecap="round" stroke-linejoin="round"
                     d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
                   <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
-                </svg>Preview</button><button type="submit"
-                class="inline-flex items-center px-6 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-150 ease-in-out"><svg
-                  xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                </svg>Preview
+              </button>
+              <button type="button" id="send-test-email-btn"
+                class="inline-flex items-center px-4 py-2 border border-indigo-300 rounded-md shadow-sm text-sm font-medium text-indigo-700 bg-indigo-50 hover:bg-indigo-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-150 ease-in-out">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                  stroke="currentColor" class="w-5 h-5 mr-2">
+                  <path stroke-linecap="round" stroke-linejoin="round"
+                    d="M6 12 3.269 3.125A59.769 59.769 0 0 1 21.485 12 59.768 59.768 0 0 1 3.27 20.875L5.999 12Zm0 0h7.5" />
+                </svg>Send Test Email
+              </button>
+              <button type="submit"
+                class="inline-flex items-center px-6 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-150 ease-in-out">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
                   stroke="currentColor" class="w-5 h-5 mr-2 transform rotate-45">
                   <path stroke-linecap="round" stroke-linejoin="round"
                     d="M6 12 3.269 3.125A59.769 59.769 0 0 1 21.485 12 59.768 59.768 0 0 1 3.27 20.875L5.999 12Zm0 0h7.5" />
-                </svg>Send Email(s)</button></footer>
+                </svg>Send Email(s)
+              </button>
+            </footer>
           </section>
         </div>
 
@@ -504,6 +516,27 @@
       </div> <!-- End grid -->
     </form>
   </main>
+
+  <!-- Test Email Modal -->
+  <div id="testEmailModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
+    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+      <div class="mt-3 text-center">
+        <h3 class="text-lg leading-6 font-medium text-gray-900">Send Test Email</h3>
+        <div class="mt-2 px-7 py-3">
+          <p class="text-sm text-gray-500">Enter the recipient email address for the test email.</p>
+          <input type="email" id="testRecipientEmail" class="mt-4 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm" placeholder="test@example.com">
+        </div>
+        <div class="items-center px-4 py-3">
+          <button id="confirmSendTestBtn" class="px-4 py-2 bg-indigo-600 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            Send Test
+          </button>
+          <button id="cancelSendTestBtn" class="mt-3 px-4 py-2 bg-gray-200 text-gray-800 text-base font-medium rounded-md w-full shadow-sm hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400">
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <!-- Quill JS -->
   <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
@@ -689,6 +722,121 @@
           displayPreview(finalContent);
         }
       });
+    }
+
+    // --- Test Email Logic ---
+    const sendTestEmailBtn = document.getElementById('send-test-email-btn');
+    const testEmailModal = document.getElementById('testEmailModal');
+    const confirmSendTestBtn = document.getElementById('confirmSendTestBtn');
+    const cancelSendTestBtn = document.getElementById('cancelSendTestBtn');
+    const testRecipientEmailInput = document.getElementById('testRecipientEmail');
+
+    sendTestEmailBtn?.addEventListener('click', () => {
+      testEmailModal?.classList.remove('hidden');
+    });
+
+    cancelSendTestBtn?.addEventListener('click', () => {
+      testEmailModal?.classList.add('hidden');
+      testRecipientEmailInput.value = ''; // Clear input on cancel
+    });
+
+    confirmSendTestBtn?.addEventListener('click', async () => {
+      const testRecipientEmail = testRecipientEmailInput.value.trim();
+      if (!testRecipientEmail || !testRecipientEmail.includes('@')) {
+        alert("Please enter a valid email address for the test email.");
+        return;
+      }
+
+      testEmailModal?.classList.add('hidden');
+      loadingIndicator?.classList.add('is-active');
+      if (navbarStatus) {
+        navbarStatus.innerHTML = `<svg class="animate-spin h-5 w-5 text-gray-500 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>Sending test email...`;
+      }
+
+      // Gather email content and subject
+      const templateSourceInput = document.querySelector('input[name="template_source"]:checked');
+      const templateSource = templateSourceInput ? templateSourceInput.value : 'draft';
+      let emailContentRaw = "";
+      let isMarkdown = false;
+      let isPlainText = false;
+
+      if (templateSource === "upload") {
+        const fileInput = document.getElementById("template_file");
+        if (fileInput && fileInput.files.length) {
+          const file = fileInput.files[0];
+          const reader = new FileReader();
+          reader.onload = async (e) => {
+            emailContentRaw = e.target.result;
+            const filenameLower = file.name.toLowerCase();
+            isMarkdown = filenameLower.endsWith('.md');
+            isPlainText = filenameLower.endsWith('.txt');
+            if (!isMarkdown && !isPlainText && !/<\/?[a-z][\s\S]*>/i.test(emailContentRaw.substring(0, 1000))) {
+              isMarkdown = true; // Heuristic for non-HTML uploaded files
+            }
+            await sendTestEmailRequest(emailContentRaw, isMarkdown, isPlainText, testRecipientEmail);
+          };
+          reader.onerror = () => {
+            alert("Error reading the template file for test email.");
+            loadingIndicator?.classList.remove('is-active');
+            navbarStatus.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 mr-1 text-gray-400"><path stroke-linecap="round" stroke-linejoin="round" d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z" /></svg>Ready`;
+          };
+          reader.readAsText(file);
+        } else {
+          alert("Please select a template file or draft content to send a test email.");
+          loadingIndicator?.classList.remove('is-active');
+          navbarStatus.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 mr-1 text-gray-400"><path stroke-linecap="round" stroke-linejoin="round" d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z" /></svg>Ready`;
+        }
+      } else { // Draft option
+        const isHtmlTabActive = htmlPanel && !htmlPanel.classList.contains('hidden');
+        emailContentRaw = isHtmlTabActive ? htmlSource.value : (quill?.root?.innerHTML || '');
+        isMarkdown = !isHtmlTabActive && !/<\/?[a-z][\s\S]*>/i.test(emailContentRaw.substring(0, 1000));
+        isPlainText = false; // Drafted content is either HTML or Markdown
+        if (!emailContentRaw.trim()) {
+          alert("Draft is empty. Please write some content to send a test email.");
+          loadingIndicator?.classList.remove('is-active');
+          navbarStatus.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 mr-1 text-gray-400"><path stroke-linecap="round" stroke-linejoin="round" d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z" /></svg>Ready`;
+          return;
+        }
+        await sendTestEmailRequest(emailContentRaw, isMarkdown, isPlainText, testRecipientEmail);
+      }
+    });
+
+    async function sendTestEmailRequest(emailContent, isMarkdown, isPlainText, testRecipientEmail) {
+      const subject = document.getElementById('subject').value.trim();
+      const customDisplayName = document.getElementById('custom_display_name').value.trim();
+
+      try {
+        const response = await fetch('/send_test_email', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            email_content: emailContent,
+            subject: subject,
+            custom_display_name: customDisplayName,
+            test_recipient_email: testRecipientEmail,
+            is_markdown: isMarkdown,
+            is_plain_text: isPlainText
+          }),
+        });
+
+        const data = await response.json();
+        loadingIndicator?.classList.remove('is-active');
+
+        if (data.status === 'success') {
+          alert("Test email sent successfully!");
+          navbarStatus.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 mr-1 text-green-500"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>Test Email Sent!`;
+        } else {
+          alert(`Failed to send test email: ${data.message}`);
+          navbarStatus.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 mr-1 text-red-500"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.008v.008H12v-.008Z" /></svg>Test Email Failed`;
+        }
+      } catch (error) {
+        console.error('Error sending test email:', error);
+        loadingIndicator?.classList.remove('is-active');
+        alert("An error occurred while trying to send the test email.");
+        navbarStatus.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 mr-1 text-red-500"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.008v.008H12v-.008Z" /></svg>Test Email Error`;
+      }
     }
 
     // --- Preview Tab Switching Logic ---
