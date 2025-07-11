@@ -6,7 +6,6 @@ import time
 import smtplib
 import markdown
 import html2text
-import atexit
 from dotenv import load_dotenv
 from flask import Flask, render_template, request, redirect, url_for, flash
 from email.mime.text import MIMEText
@@ -14,15 +13,6 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.base import MIMEBase
 from email import encoders
 from werkzeug.utils import secure_filename
-
-# Import keep-alive service
-try:
-    from keep_alive import start_keep_alive, stop_keep_alive
-    KEEP_ALIVE_AVAILABLE = True
-except ImportError:
-    KEEP_ALIVE_AVAILABLE = False
-    def start_keep_alive(): pass
-    def stop_keep_alive(): pass
 
 # Load environment variables from .env
 load_dotenv()
@@ -53,13 +43,6 @@ if not FROM_EMAIL:
 
 app = Flask(__name__)
 app.secret_key = os.getenv('FLASK_SECRET_KEY', "a_default_but_less_secure_key")
-
-# Register cleanup function
-atexit.register(stop_keep_alive)
-
-# Start keep-alive service if in production
-if os.getenv('FLASK_ENV') == 'production':
-    start_keep_alive()
 
 ALLOWED_EXTENSIONS_TEMPLATE = {'html', 'htm', 'md', 'txt'} # Added htm
 ALLOWED_EXTENSIONS_CSV = {'csv'}
@@ -268,8 +251,7 @@ def health_check():
     return {
         "status": "healthy",
         "timestamp": int(time.time()),
-        "version": "1.0.0",
-        "keep_alive": KEEP_ALIVE_AVAILABLE
+        "version": "1.0.0"
     }
 
 @app.route("/", methods=["GET", "POST"])
