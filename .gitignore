@@ -185,8 +185,11 @@ $RECYCLE.BIN/
 *_credentials.json
 *_config.json
 smtp_test.py
-email
+email_templates/
 
 # Development database exports
 *.sql
 *.dump
+
+# Documentation files
+docs/
