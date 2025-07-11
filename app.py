@@ -3,43 +3,32 @@ import re
 import csv
 import io
 import time
-import smtplib
 import markdown
-import html2text
 from dotenv import load_dotenv
 from flask import Flask, render_template, request, redirect, url_for, flash
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
-from email.mime.base import MIMEBase
-from email import encoders
 from werkzeug.utils import secure_filename
+import requests
+import base64
 
 # Load environment variables from .env
 load_dotenv()
 DEFAULT_DISPLAY_NAME = os.getenv('display_name', 'Default Sender Name')
-SENDER_EMAIL = os.getenv('sender_email')  # Used for SMTP authentication/login
-FROM_EMAIL = os.getenv('from_email', os.getenv('sender_email'))  # Used in From header, fallback to sender_email
-PASSWORD = os.getenv('password')
-
-# Load SMTP configuration
-MAILER_HOST = os.getenv('MAILER_HOST', "smtp.mailersend.net")
-MAILER_PORT = int(os.getenv('MAILER_PORT', "587"))
+FROM_EMAIL = os.getenv('from_email')  # Used in From header
+FREESEND_API_KEY = os.getenv('FREESEND_API_KEY')
+FREESEND_API_URL = os.getenv('FREESEND_API_URL', "https://freesend.metafog.io/api/send-email") # Default fallback
 
 # Basic validation for required env vars
-if not SENDER_EMAIL or not PASSWORD:
-    print("Error: SENDER_EMAIL and PASSWORD must be set in the .env file.")
-    print("SENDER_EMAIL is used for SMTP login authentication.")
-    # Consider exiting or handling this more gracefully depending on deployment
+if not FREESEND_API_KEY:
+    print("Error: FREESEND_API_KEY must be set in the .env file.")
     # exit(1)
 
 if not FROM_EMAIL:
-    print("Warning: FROM_EMAIL not set, using SENDER_EMAIL for From header.")
-    FROM_EMAIL = SENDER_EMAIL
+    print("Error: FROM_EMAIL must be set in the .env file.")
+    # exit(1)
 
-# Validate FROM_EMAIL (should have a valid fallback)
-if not FROM_EMAIL:
-    print("Warning: FROM_EMAIL not set, using SENDER_EMAIL as fallback.")
-    FROM_EMAIL = SENDER_EMAIL
+if not FREESEND_API_URL:
+    print("Error: FREESEND_API_URL must be set in the .env file or provided as a default.")
+    # exit(1)
 
 app = Flask(__name__)
 app.secret_key = os.getenv('FLASK_SECRET_KEY', "a_default_but_less_secure_key")
@@ -135,111 +124,99 @@ def extract_subject_and_body(content):
 
 
 def send_email(receiver, subject, html_message, attachments, display_name):
-    """Create and send an email with HTML, plain text, attachments, and custom display name."""
-    if not SENDER_EMAIL or not PASSWORD:
-        return False, "Sender email or password not configured."
+    """Send an email using the Freesend API."""
+    if not FREESEND_API_KEY:
+        return False, "Freesend API Key not configured."
+    if not FROM_EMAIL:
+        return False, "FROM_EMAIL not configured."
+    if not FREESEND_API_URL:
+        return False, "Freesend API URL not configured."
 
-    multipart_msg = MIMEMultipart("alternative")
-    multipart_msg["Subject"] = subject
-    
-    # Gmail SMTP requires the From header to match the authenticated sender
-    # to avoid "Sender domain is not valid" errors
-    if MAILER_HOST and "gmail.com" in MAILER_HOST.lower():
-        # For Gmail, use the authenticated sender email
-        multipart_msg["From"] = f"{display_name} <{SENDER_EMAIL}>"
-        # Set Reply-To to the desired from_email if different
-        if FROM_EMAIL != SENDER_EMAIL:
-            multipart_msg["Reply-To"] = f"{display_name} <{FROM_EMAIL}>"
-    else:
-        # For other SMTP servers, use the from_email
-        multipart_msg["From"] = f"{display_name} <{FROM_EMAIL}>"
-    
-    multipart_msg["To"] = receiver
+    api_url = FREESEND_API_URL
+    headers = {
+        "Authorization": f"Bearer {FREESEND_API_KEY}",
+        "Content-Type": "application/json"
+    }
 
-    # Generate plain text version
-    try:
-        h = html2text.HTML2Text()
-        h.ignore_links = False
-        h.body_width = 0 # Don't wrap lines
-        plain_text_message = h.handle(html_message)
-    except Exception as e:
-        print(f"Warning: Could not generate plain text for {receiver}: {e}")
-        plain_text_message = "HTML content could not be converted to plain text. Please view this email in an HTML-compatible client."
-
-    part1 = MIMEText(plain_text_message, "plain", "utf-8")
-    part2 = MIMEText(html_message, "html", "utf-8")
-    multipart_msg.attach(part1)
-    multipart_msg.attach(part2)
-
-    # Handle Attachments
+    # Prepare attachments for Freesend API
+    freesend_attachments = []
     if attachments:
         for file in attachments:
-            # Ensure file object is valid and has a filename
             if file and hasattr(file, 'filename') and file.filename:
                 try:
                     filename = secure_filename(file.filename)
-                    if not filename: # secure_filename might return empty string for weird names
-                         filename = "attachment" # Provide a default name
-                    file.seek(0) # Ensure reading from the start
+                    if not filename:
+                        filename = "attachment"
+                    file.seek(0)
                     file_data = file.read()
-                    file.seek(0) # Reset pointer if file needs to be read again elsewhere
-                    attach_part = MIMEBase("application", "octet-stream")
-                    attach_part.set_payload(file_data)
-                    encoders.encode_base64(attach_part)
-                    attach_part.add_header("Content-Disposition", f"attachment; filename=\"{filename}\"") # Use quotes for filenames with spaces
-                    multipart_msg.attach(attach_part)
-                except Exception as e:
-                    print(f"Error attaching file {getattr(file, 'filename', 'N/A')}: {e}")
-                    # Decide whether to fail the whole email or just skip the attachment
-                    log_msg = f"Warning: Could not attach file {getattr(file, 'filename', 'N/A')} for {receiver}. Error: {e}. Email sent without it."
-                    print(log_msg) # Log locally
-                    # Optionally return a specific status/message indicating attachment failure? For now, just log.
-                    # return False, f"Error attaching file {file.filename}: {e}" # This would stop the email
+                    base64_content = base64.b64encode(file_data).decode('utf-8')
+                    file.seek(0) # Reset pointer
 
-    # Send Email via SMTP
+                    # Determine content type (basic heuristic, can be improved)
+                    content_type = "application/octet-stream"
+                    if '.' in filename:
+                        ext = filename.rsplit('.', 1)[1].lower()
+                        if ext == 'pdf': content_type = 'application/pdf'
+                        elif ext in ['jpg', 'jpeg']: content_type = 'image/jpeg'
+                        elif ext == 'png': content_type = 'image/png'
+                        elif ext == 'gif': content_type = 'image/gif'
+                        elif ext == 'txt': content_type = 'text/plain'
+                        elif ext == 'html': content_type = 'text/html'
+                        elif ext == 'csv': content_type = 'text/csv'
+                        elif ext == 'xlsx': content_type = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                        elif ext == 'docx': content_type = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+                        elif ext == 'pptx': content_type = 'application/vnd.openxmlformats-officedocument.presentationml.presentation'
+
+                    freesend_attachments.append({
+                        "filename": filename,
+                        "content": base64_content,
+                        "contentType": content_type
+                    })
+                except Exception as e:
+                    print(f"Error preparing attachment {getattr(file, 'filename', 'N/A')}: {e}")
+                    # Log and continue, don't fail the whole email for one attachment
+                    log_msg = f"Warning: Could not prepare attachment {getattr(file, 'filename', 'N/A')} for {receiver}. Error: {e}. Email sent without it."
+                    print(log_msg)
+
+    payload = {
+        "fromName": display_name,
+        "fromEmail": FROM_EMAIL,
+        "to": receiver,
+        "subject": subject,
+        "html": html_message,
+        "attachments": freesend_attachments
+    }
+
     try:
-        # Context manager ensures server.quit() is called
-        with smtplib.SMTP(host=MAILER_HOST, port=MAILER_PORT, timeout=30) as server:
-            server.ehlo()
-            # Start TLS if not using implicit TLS port (465)
-            if MAILER_PORT != 465:
-                server.starttls()
-                server.ehlo() # Re-identify after starting TLS
-            server.login(user=SENDER_EMAIL, password=PASSWORD)
-            
-            # Use FROM_EMAIL as envelope sender for SMTP providers that support domain delegation
-            # For direct Gmail SMTP, this would need to match SENDER_EMAIL
-            # For services like SendPulse, they can handle domain delegation
-            envelope_sender = FROM_EMAIL if FROM_EMAIL else SENDER_EMAIL
-            server.sendmail(envelope_sender, receiver, multipart_msg.as_string())
-            
-        return True, f"Email successfully sent to {receiver}"
-    except smtplib.SMTPAuthenticationError as e:
-        error_msg = f"SMTP Authentication Error: {e}. Check SENDER_EMAIL and PASSWORD in .env."
+        response = requests.post(api_url, json=payload, headers=headers, timeout=30)
+        response.raise_for_status() # Raise HTTPError for bad responses (4xx or 5xx)
+        
+        # Freesend API returns {"message": "Email sent successfully"} on success
+        response_json = response.json()
+        if response.status_code == 200 and response_json.get("message") == "Email sent successfully":
+            return True, f"Email successfully sent to {receiver} via Freesend."
+        else:
+            error_msg = response_json.get("error", "Unknown error from Freesend API.")
+            print(f"Freesend API Error for {receiver}: {error_msg}")
+            return False, f"Freesend API Error: {error_msg}"
+
+    except requests.exceptions.HTTPError as e:
+        error_msg = f"HTTP Error sending to {receiver} via Freesend: {e.response.status_code} - {e.response.text}"
         print(error_msg)
         return False, error_msg
-    except smtplib.SMTPRecipientsRefused as e:
-        error_msg = f"SMTP Recipients Refused for {receiver}: {e}"
+    except requests.exceptions.ConnectionError as e:
+        error_msg = f"Connection Error sending to {receiver} via Freesend: {e}. Check network or API endpoint."
         print(error_msg)
         return False, error_msg
-    except smtplib.SMTPSenderRefused as e:
-        error_msg = f"SMTP Sender Refused for {receiver}: {e}. Gmail may require the From address to match the authenticated sender."
+    except requests.exceptions.Timeout as e:
+        error_msg = f"Timeout Error sending to {receiver} via Freesend: {e}. API took too long to respond."
         print(error_msg)
         return False, error_msg
-    except smtplib.SMTPServerDisconnected:
-        error_msg = f"SMTP Server Disconnected unexpectedly for {receiver}. Check connection/server limits."
+    except requests.exceptions.RequestException as e:
+        error_msg = f"An unexpected Request Error occurred sending to {receiver} via Freesend: {e}"
         print(error_msg)
         return False, error_msg
-    except smtplib.SMTPException as e:
-        error_msg = f"SMTP Error sending to {receiver}: {e}"
-        print(error_msg)
-        return False, error_msg
-    except OSError as e: # Handle potential network/socket errors
-         error_msg = f"Network/OS Error sending to {receiver}: {e}"
-         print(error_msg)
-         return False, error_msg
     except Exception as e:
-        # Catch broader exceptions as a fallback
         error_msg = f"An unexpected error occurred sending to {receiver}: {e.__class__.__name__} - {e}"
         print(error_msg)
         return False, error_msg
