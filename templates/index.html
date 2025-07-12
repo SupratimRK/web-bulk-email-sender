@@ -292,52 +292,6 @@
         <!-- Left Column: Form Inputs -->
         <div class="space-y-8">
 
-          <!-- Content Card -->
-          <section class="bg-white shadow-lg rounded-lg overflow-hidden">
-            <header class="px-6 py-4 bg-gray-50 border-b border-gray-200">
-              <h2 class="text-lg font-semibold text-gray-700 flex items-center"><svg xmlns="http://www.w3.org/2000/svg"
-                  fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"
-                  class="w-5 h-5 mr-2 text-indigo-500">
-                  <path stroke-linecap="round" stroke-linejoin="round"
-                    d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" />
-                </svg>Email Content</h2>
-            </header>
-            <div class="p-6 space-y-6">
-              <div><label class="block text-sm font-medium text-gray-700 mb-3">1. Choose Content Source</label>
-                <div class="radio-group-container">
-                  <div><input id="sourceDraft" name="template_source" type="radio" value="draft" checked><label
-                      for="sourceDraft">Draft Below</label></div>
-                  <div><input id="sourceUpload" name="template_source" type="radio" value="upload"><label
-                      for="sourceUpload">Upload Template</label></div>
-                </div>
-              </div>
-              <div class="hidden" id="uploadSection"><label for="template_file"
-                  class="block text-sm font-medium text-gray-700 mb-1">Upload Template File</label><input type="file"
-                  name="template_file" id="template_file"
-                  class="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 focus:outline-none"
-                  accept=".html,.htm,.md,.txt"><span id="template-filename-display"
-                  class="text-xs text-gray-500 mt-1 block hidden"></span>
-                <p class="mt-1 text-xs text-gray-500">Allowed types: HTML, HTM, MD, TXT.</p>
-              </div>
-              <div id="draftSection"><label class="block text-sm font-medium text-gray-700 mb-3">2. Draft
-                  Content</label>
-                <div class="border-b border-gray-200 mb-0">
-                  <nav class="-mb-px flex space-x-4" id="editorTabs"><button type="button" id="rich-tab"
-                      class="editor-tab active" aria-current="page">Rich Text Editor</button><button type="button"
-                      id="html-tab" class="editor-tab">HTML Source</button></nav>
-                </div>
-                <div id="editorTabsContent" class="mt-0">
-                  <div id="rich" role="tabpanel">
-                    <div id="quillEditor"></div>
-                  </div>
-                  <div id="html" class="hidden" role="tabpanel"><textarea id="htmlSource"
-                      class="block w-full rounded-md rounded-t-none border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                      style="height:342px;" placeholder="Enter or paste HTML source code here..."></textarea></div>
-                </div><textarea name="email_content" id="email_content" class="hidden"></textarea>
-              </div>
-            </div>
-          </section>
-
           <!-- Options Card -->
           <section class="bg-white shadow-lg rounded-lg overflow-hidden">
             <header class="px-6 py-4 bg-gray-50 border-b border-gray-200">
@@ -385,6 +339,11 @@
                   Current delay: <span id="delay-value">1</span> second(s)</span>
                 <p class="mt-1 text-xs text-gray-500">Recommended: 1-5 seconds to avoid rate limiting. Max: 300 seconds (5 minutes).</p>
               </div>
+              <div id="emailLimitDiv" class="md:col-span-2 hidden">
+                <label for="email_limit" class="block text-sm font-medium text-gray-700 mb-1">Number of Emails to Send (optional):</label>
+                <input type="number" step="1" min="1" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm" id="email_limit" name="email_limit" placeholder="Leave empty for all">
+                <p class="mt-1 text-xs text-gray-500">Specify how many emails to send from the top of your CSV list. Leave empty to send to all recipients.</p>
+              </div>
               <div id="manualDiv" class="hidden md:col-span-2"><label for="manual_email"
                   class="block text-sm font-medium text-gray-700">Recipient Email Address</label><input type="email"
                   name="manual_email" id="manual_email"
@@ -428,7 +387,53 @@
         </div>
 
         <!-- Right Column: Preview -->
-        <aside>
+        <aside class="space-y-8">
+          <!-- Content Card -->
+          <section class="bg-white shadow-lg rounded-lg overflow-hidden">
+            <header class="px-6 py-4 bg-gray-50 border-b border-gray-200">
+              <h2 class="text-lg font-semibold text-gray-700 flex items-center"><svg xmlns="http://www.w3.org/2000/svg"
+                  fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"
+                  class="w-5 h-5 mr-2 text-indigo-500">
+                  <path stroke-linecap="round" stroke-linejoin="round"
+                    d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" />
+                </svg>Email Content</h2>
+            </header>
+            <div class="p-6 space-y-6">
+              <div><label class="block text-sm font-medium text-gray-700 mb-3">1. Choose Content Source</label>
+                <div class="radio-group-container">
+                  <div><input id="sourceDraft" name="template_source" type="radio" value="draft" checked><label
+                      for="sourceDraft">Draft Below</label></div>
+                  <div><input id="sourceUpload" name="template_source" type="radio" value="upload"><label
+                      for="sourceUpload">Upload Template</label></div>
+                </div>
+              </div>
+              <div class="hidden" id="uploadSection"><label for="template_file"
+                  class="block text-sm font-medium text-gray-700 mb-1">Upload Template File</label><input type="file"
+                  name="template_file" id="template_file"
+                  class="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 focus:outline-none"
+                  accept=".html,.htm,.md,.txt"><span id="template-filename-display"
+                  class="text-xs text-gray-500 mt-1 block hidden"></span>
+                <p class="mt-1 text-xs text-gray-500">Allowed types: HTML, HTM, MD, TXT.</p>
+              </div>
+              <div id="draftSection"><label class="block text-sm font-medium text-gray-700 mb-3">2. Draft
+                  Content</label>
+                <div class="border-b border-gray-200 mb-0">
+                  <nav class="-mb-px flex space-x-4" id="editorTabs"><button type="button" id="rich-tab"
+                      class="editor-tab active" aria-current="page">Rich Text Editor</button><button type="button"
+                      id="html-tab" class="editor-tab">HTML Source</button></nav>
+                </div>
+                <div id="editorTabsContent" class="mt-0">
+                  <div id="rich" role="tabpanel">
+                    <div id="quillEditor"></div>
+                  </div>
+                  <div id="html" class="hidden" role="tabpanel"><textarea id="htmlSource"
+                      class="block w-full rounded-md rounded-t-none border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                      style="height:342px;" placeholder="Enter or paste HTML source code here..."></textarea></div>
+                </div><textarea name="email_content" id="email_content" class="hidden"></textarea>
+              </div>
+            </div>
+          </section>
+
           <div class="sticky-preview bg-white shadow-lg rounded-lg overflow-hidden">
             <header class="px-6 py-4 bg-gray-50 border-b border-gray-200">
               <h2 class="text-lg font-semibold text-gray-700 flex items-center"><svg xmlns="http://www.w3.org/2000/svg"
@@ -472,7 +477,7 @@
                       <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1 inline-block" viewBox="0 0 20 20"
                         fill="currentColor">
                         <path fill-rule="evenodd"
-                          d="M3 5a2 2 0 012-2h10a2 2 0 012 2v8a2 2 0 01-2 2h-2.22l.123.492a.75.75 0 01-.738 1.008H7.835a.75.75 0 01-.738-1.008l.123-.492H5a2 2 0 01-2-2V5zm2-1a1 1 0 00-1 1v8a1 1 0 001 1h10a1 1 0 001-1V5a1 1 0 00-1-1H5z"
+                          d="M3 5a2 2 0 012-2h10a2 2 0 012 2v8a2 2 0 01-2 2h-2.22l.123.492a.75.75 0 01-.738 1.008H7.835a.75.75 0 01-.738-1.008l.123-.492H5a2 2 0 01-2-2V5zm2-1a1 1 0 00-1 1v8a1 1 0 001 1h10a1 1 0 001-1V4a1 1 0 00-1-1H5z"
                           clip-rule="evenodd" />
                       </svg>
                       Desktop
@@ -852,14 +857,16 @@
 
     // --- UI Toggles (Sections) ---
     const bulkRadio = document.getElementById("bulk"); const manualRadio = document.getElementById("manual"); const csvDiv = document.getElementById("csvDiv"); const manualDiv = document.getElementById("manualDiv"); const csvInput = document.getElementById("csv_file"); const manualInput = document.getElementById("manual_email"); const delayDiv = document.getElementById("delayDiv");
+    const emailLimitDiv = document.getElementById("emailLimitDiv"); // Get the new div
     const sourceUploadRadio = document.getElementById("sourceUpload"); const sourceDraftRadio = document.getElementById("sourceDraft"); const uploadSection = document.getElementById("uploadSection"); const draftSection = document.getElementById("draftSection"); const templateInput = document.getElementById("template_file");
 
     const toggleSendMethod = () => {
-      if (!manualRadio || !csvDiv || !manualDiv || !manualInput || !csvInput || !delayDiv) return; // Guard
+      if (!manualRadio || !csvDiv || !manualDiv || !manualInput || !csvInput || !delayDiv || !emailLimitDiv) return; // Add emailLimitDiv to guard
       const isManual = manualRadio.checked;
       manualDiv.classList.toggle('hidden', !isManual);
       csvDiv.classList.toggle('hidden', isManual);
-      delayDiv.classList.toggle('hidden', isManual); // Hide delay for manual sending
+      delayDiv.classList.toggle('hidden', isManual);
+      emailLimitDiv.classList.toggle('hidden', isManual); // Toggle visibility for emailLimitDiv
       manualInput.required = isManual;
       csvInput.required = !isManual;
     };

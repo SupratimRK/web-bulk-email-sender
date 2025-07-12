@@ -299,6 +299,17 @@ def index():
         except (ValueError, TypeError):
             email_delay = 1.0  # Default fallback
         
+        # --- Get Email Limit (for bulk sending) ---
+        email_limit = None
+        try:
+            email_limit_str = request.form.get("email_limit", "").strip()
+            if email_limit_str:
+                email_limit = int(email_limit_str)
+                if email_limit < 1:
+                    email_limit = None # Treat as no limit if less than 1
+        except (ValueError, TypeError):
+            email_limit = None # No limit if conversion fails
+
         # Production timeout management - reduce delays for large batches
         # Detect production more reliably (Render sets various env vars)
         is_production = (
@@ -382,6 +393,11 @@ def index():
                     skipped_count += 1
                     continue
                 recipients_data.append({'email': receiver, 'data': row})
+            
+            # Apply email limit if specified
+            if email_limit is not None and len(recipients_data) > email_limit:
+                log_messages.append(f"INFO: Limiting bulk send to the first {email_limit} recipients.")
+                recipients_data = recipients_data[:email_limit]
 
         else: # Manual sending
             manual_email = request.form.get("manual_email", "").strip()
